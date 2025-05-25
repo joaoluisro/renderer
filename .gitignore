@@ -1,0 +1,8 @@
+.idea
+.vscode
+build
+.env
+video 
+objs
+output
+libs
