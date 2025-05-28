@@ -4,7 +4,7 @@ Sphere::~Sphere()
 {
 }
 
-bool Sphere::intersects(Ray &r, Vector3D &p) const
+float Sphere::intersects(Ray &r) const
 {
   // Vector from sphere this->origin to r origin
   Vector3D L = r.origin - this->origin;
@@ -18,7 +18,7 @@ bool Sphere::intersects(Ray &r, Vector3D &p) const
   float disc = B*B - 4.0f*A*C;
   if (disc < 0.0f) {
       // no real roots ⇒ no intersection
-      return false;
+      return -1;
   }
 
   // Compute the two intersection distances along the r
@@ -26,9 +26,8 @@ bool Sphere::intersects(Ray &r, Vector3D &p) const
   float inv2A   = 0.5f / A;
   float t0 = (-B - sqrt_disc) * inv2A;
   float t1 = (-B + sqrt_disc) * inv2A;
-  p = r.at(t0);
   // If either t0 or t1 is ≥ 0, the sphere is hit in front of the r origin
-  return(true);
+  return(t0);
 }
 
 Vector3D Sphere::get_normal(Vector3D &at) const

@@ -7,7 +7,7 @@
 #include <memory>
 using namespace std;
 
-int parse_obj(const char *filename, vector<shared_ptr<BaseObject>> &meshdata)
+bool parse_obj(const char *filename, vector<shared_ptr<BaseObject>> &meshdata)
 {
     const char *inputfile = filename;
     tinyobj::attrib_t attrib;                   // holds all vertex data
@@ -15,8 +15,7 @@ int parse_obj(const char *filename, vector<shared_ptr<BaseObject>> &meshdata)
     std::vector<tinyobj::material_t> materials; // optional .mtl materials
     std::string warn, err;
 
-    // load
-    bool ret = tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, inputfile);
+    bool ret = tinyobj::LoadObj(&attrib, &shapes, &materials,&warn, &err, inputfile);
 
     if (!warn.empty())
         std::cout << "WARN: " << warn << "\n";
@@ -25,15 +24,13 @@ int parse_obj(const char *filename, vector<shared_ptr<BaseObject>> &meshdata)
     if (!ret)
     {
         std::cerr << "Failed to load/parse .obj file\n";
-        return 1;
+        return false;
     }
 
     // iterate shapes
     for (size_t s = 0; s < shapes.size(); s++)
     {
         size_t index_offset = 0;
-        //   std::cout << "Shape " << s << " has " << shapes[s].mesh.num_face_vertices.size() << " faces\n";
-
         // for each face
         for (size_t f = 0; f < shapes[s].mesh.num_face_vertices.size(); f++)
         {
@@ -76,9 +73,6 @@ int parse_obj(const char *filename, vector<shared_ptr<BaseObject>> &meshdata)
                 green = attrib.colors[3 * size_t(idx.vertex_index) + 1];
                 blue = attrib.colors[3 * size_t(idx.vertex_index) + 2];
 
-                std::cout << "  v(" << vx << "," << vy << "," << vz << ")"
-                          << " n(" << nx << "," << ny << "," << nz << ")"
-                          << " uv(" << tx << "," << ty << ")\n";
             }
             meshdata.push_back(make_shared<Triangle>(t_vertices[0], 
                                                     t_vertices[1], 
@@ -86,7 +80,7 @@ int parse_obj(const char *filename, vector<shared_ptr<BaseObject>> &meshdata)
                                                     t_normals[0], 
                                                     t_normals[1], 
                                                     t_normals[2], 
-                                                    Color(red,green,blue)));
+                                                    Color(1.0,0,0)));
             index_offset += fv;
         }
     }
@@ -99,5 +93,5 @@ int parse_obj(const char *filename, vector<shared_ptr<BaseObject>> &meshdata)
                   << "(" << m.diffuse[0] << "," << m.diffuse[1] << "," << m.diffuse[2] << ")\n";
     }
 
-    return 0;
+    return true;
 }

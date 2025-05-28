@@ -10,7 +10,7 @@ class BaseObject
 {
 public:
   virtual ~BaseObject() = default;
-  virtual bool intersects(Ray &r, Vector3D &p) const = 0;  
+  virtual float intersects(Ray &r) const = 0;  
   virtual Vector3D get_normal(Vector3D &at) const = 0;
   virtual Color get_color() const = 0;
   virtual void translate(Vector3D &to) = 0;

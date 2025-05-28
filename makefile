@@ -1,9 +1,10 @@
-CXX := g++
-CXXFLAGS := -I$(INCDIR) -Wall -Wextra -std=c++17	-O3
-
 SRCDIR := src
-INCDIR := headers
+HEADERDIR := headers
+LIBSDIR	:=	libs
 BUILDDIR := build_make
+
+CXX := g++
+CXXFLAGS := -I$(HEADERDIR)	-I$(LIBSDIR) -Wall -Wextra -std=c++17	-O3
 
 # Source files
 SRCS := main.cpp $(wildcard $(SRCDIR)/*.cpp)

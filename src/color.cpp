@@ -7,7 +7,7 @@ Color::Color()
   b=0;
 }
 
-Color::Color(double r, double g, double b){
+Color::Color(float r, float g, float b){
   this->r = r;
   this->g = g;
   this->b = b;
@@ -23,11 +23,10 @@ Color Color::operator-(const Color& other) const
 {
     return Color(other.r-r, other.g-g, other.b-b);
 }
-Color Color::operator*(const Color& other) const
+Color Color::operator*(Color& other)
 {
     return Color(other.r*r, other.g*g, other.b*b);
 }
-
 Color& Color::operator*=(float lambda)
 {
   r *= lambda;
@@ -36,7 +35,15 @@ Color& Color::operator*=(float lambda)
   return *this;
 }
 
-Color Color::clamp(const Color& c)
+Color Color::operator*(float lambda) const
 {
-  return Color((c.r / (1 + c.r)), (c.g / (1 + c.g)), (c.b / (1 + c.b)));
+  return Color(r*lambda, g*lambda, b*lambda);
+}
+
+Color& Color::operator+=(const Color &other)
+{
+  r += other.r;
+  g += other.g;
+  b += other.b;
+  return *this;
 }

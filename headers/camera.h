@@ -2,6 +2,8 @@
 #define CAMERA_HEADER
 #include "vector3d.h"
 #include <math.h>
+#include <vector>
+#include <ray.h>
 
 class Camera
 {

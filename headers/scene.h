@@ -7,6 +7,8 @@
 #include "camera.h"
 #include "baseObject.h"
 #include "color.h"
+#include "framebuffer.h"
+#include "light.h"
 
 #define PI 3.1419
 
@@ -16,7 +18,7 @@ class Scene{
   public:
     Scene(Camera &c, 
       vector<shared_ptr<BaseObject>> &objs, 
-      vector<shared_ptr<Vector3D>> &lights) :
+      vector<shared_ptr<Light>> &lights) :
       camera(c), scene_objs(objs), scene_lights(lights)
     {
     }
@@ -27,7 +29,7 @@ class Scene{
   private:
     Camera camera;
     vector<shared_ptr<BaseObject>> scene_objs;
-    vector<shared_ptr<Vector3D>>  scene_lights;
+    vector<shared_ptr<Light>>  scene_lights;
 };
 
 #endif

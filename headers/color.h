@@ -1,21 +1,21 @@
 #ifndef COLOR_HEADER
 #define COLOR_HEADER
-
-#include "vector3d.h"
-#include <math.h>
 class Color
 {
   public:
     Color();
-    Color(double r, double g, double b); 
+    Color(float r, float g, float b); 
     ~Color();
     Color operator+(const Color& other) const;
     Color operator-(const Color& other) const;
-    Color operator*(const Color& other) const;
+    Color operator*(Color& other);
+
     Color& operator*=(float lambda);
-    static Color clamp(const Color& c);
+    Color operator*(float lambda) const;
+
+    Color& operator+=(const Color &other);
   public:
-    double r,g,b;
+    float r,g,b;
 };
 
 #endif

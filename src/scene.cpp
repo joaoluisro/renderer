@@ -4,49 +4,63 @@
 #include "CImg-3.5.4/CImg.h"
 using namespace cimg_library;
 
+
 Scene::~Scene()
 {
 }
 
-void render_object(Vector3D &p,
-                  Vector3D &camera_origin, 
-                  shared_ptr<BaseObject> obj, 
-                  Color& final_color, 
-                  vector<shared_ptr<Vector3D>> scene_lights)
+void write_to_ppm(const char* filename, Framebuffer &frame_buffer, int width, int height)
 {
-  /* ambient term */
-  auto ambient_component = obj->get_color();
-  final_color = Color(0,0,0);
-  for(auto light : scene_lights)
+  frame_buffer.clamp();
+  CImg<unsigned char> image(width, height, 1, 3);
+  for(auto i = 0; i < width; i++)
   {
-    /* diffuse component */
-    auto n = obj->get_normal(p);
-    n.normalize();
-
-    auto l = *light - n;
-    l.normalize();
-    float alpha = max(0.0f,n.dot(l));
-
-    auto diff_component = obj->get_color();
-    diff_component *= alpha;
-
-    /* specular component */
-    auto v = camera_origin - p;
-    v.normalize();
-    
-    auto r = (2*n.dot(l))*n - l;
-    float beta = max(0.0f,r.dot(v));
-    auto spec_component = Color(1.0f,1.0f,1.0f);
-    spec_component *= beta * 0.5;
-    
-    final_color = final_color + diff_component + spec_component;
+    for(auto j = 0; j < height; j++)
+    {
+      image(i,j,0) = frame_buffer.at(i,j).r;
+      image(i,j,1) = frame_buffer.at(i,j).g;
+      image(i,j,2) = frame_buffer.at(i,j).b;
+    }
   }
+  image.save(filename);
+}
+
+void get_fragment_color(Vector3D &p,
+                        Vector3D &camera_origin, 
+                        shared_ptr<BaseObject> obj, 
+                        Color& final_color, 
+                        vector<shared_ptr<Light>> scene_lights)
+{
+  Vector3D V = (camera_origin - p).normalized();
+  float shininess = 1;
+  /* ambient term */
+  final_color = obj->get_color() * 0.05;
+
+  for(const auto &light : scene_lights)
+  {
+    Vector3D L = (light->position - p).normalized();
+    Vector3D N = obj->get_normal(p).normalized();
+    float ndotl = N.dot(L);
+    if(ndotl <= 0.0f) return;
+
+    // Diffuse component
+    Color diff = obj->get_color() * light->color * ndotl;
+
+    // Specular component
+    Vector3D R = ((2 * ndotl) * N - L).normalized();
+    float specAngle = max(R.dot(V), 0.0f);
+    Color spec = obj->get_color() * light->color * pow(specAngle, shininess);
+    
+    final_color += diff + spec;
+  }
+
 }
 
 bool Scene::render(const char *filename, int width, int height)
 {
-  CImg<unsigned char> image(width, height, 1, 3);
+  Framebuffer frame_buffer(width, height);
 
+  #pragma omp parallel for collapse(2)
   for(auto i = 0; i < width; i++)
   {
     for(auto j = 0; j < height; j++)
@@ -54,25 +68,32 @@ bool Scene::render(const char *filename, int width, int height)
       auto shooting_dir = camera.pixelToWorldSpace(i,j);
       Ray r(camera.origin, shooting_dir);
       Color final_color(0,0,0);
-      Vector3D p;
- 
+      
+      float min_dist = 1e+5;
+      bool hit = false;
+      shared_ptr<BaseObject> closest;
+      int count = 0;
       for(auto &obj : scene_objs)
       {
-        Vector3D p;
-        
-        if(obj->intersects(r, p))
+        float t = obj->intersects(r);
+        if(t > 0 && t < min_dist)
         {
-          render_object(p, camera.origin, obj, final_color, scene_lights);
-          final_color = Color::clamp(final_color);
+          hit = true;
+          count++;
+          min_dist = t;
+          closest = obj;
         }
       }
-      final_color *= (float)255.0;
-      image(i,j, 0) = final_color.r;
-      image(i,j, 1) = final_color.g;
-      image(i,j, 2) = final_color.b;
+      if(hit)
+      {
+        auto p = r.at(min_dist);
+        get_fragment_color(p, camera.origin, closest, final_color, scene_lights);
+      }
+      frame_buffer.set(i,j,final_color);
+    
     }
   }
 
-  image.save(filename);
+  write_to_ppm(filename, frame_buffer, width, height);
   return true;
 }
