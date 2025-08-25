@@ -8,3 +8,11 @@ libs
 .notes
 build_make
 CMakeFiles
+report
+benchmark
+CMakeCache.txt
+CmakePresets.json
+cmake_install.cmake
+Makefile
+out
+tests

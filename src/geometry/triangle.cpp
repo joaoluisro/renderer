@@ -1,6 +1,8 @@
-#include "triangle.h"
+#include <algorithm>
 
-#define EPS 1e-8f
+#include "geometry/triangle.h"
+
+#define EPS 1e-6f
 Triangle::Triangle(
   Vector3D v0, 
   Vector3D v1, 
@@ -8,7 +10,8 @@ Triangle::Triangle(
   Vector3D n0,
   Vector3D n1,
   Vector3D n2,
-  Color color
+  Color color,
+  Material mat
 )
 {
   this->v0 = v0;
@@ -25,13 +28,14 @@ Triangle::Triangle(
     this->n2 = n2;
   }
   this->color = color;
+  this->mat = mat;
 }
 
 Triangle::~Triangle()
 {
 }
 
-float Triangle::intersects(Ray &r) const 
+double Triangle::intersects(Ray &r) const 
 {
   // Compute the plane's normal
   Vector3D v0v1 = v1 - v0;
@@ -40,17 +44,17 @@ float Triangle::intersects(Ray &r) const
   Vector3D N = v0v1.cross(v0v2); // N
 
   // Step 1: Finding P
-  float kEpsilon = 1e-6;
+  double kEpsilon = 1e-6;
   // Check if the ray and plane are parallel
-  float NdotRayDirection = N.dot(r.direction);
+  double NdotRayDirection = N.dot(r.direction);
   if (fabs(NdotRayDirection) < kEpsilon) // Almost 0
       return -1; // They are parallel, so they don't intersect!
 
   // Compute d parameter using equation 2
-  float d = -N.dot(v0);
+  double d = -N.dot(v0);
   
   // Compute t (equation 3)
-  float t = -(N.dot(r.origin) + d) / NdotRayDirection;
+  double t = -(N.dot(r.origin) + d) / NdotRayDirection;
   
   // Check if the triangle is behind the ray
   if (t < 0) return -1; // The triangle is behind
@@ -83,18 +87,11 @@ float Triangle::intersects(Ray &r) const
 
 Color Triangle::get_color() const
 {
-  return color;
-}
-
-void Triangle::translate(Vector3D &to)
-{
-  v0 = v0 + to;
-  v1 = v1 + to;
-  v2 = v2 + to;
+  return Color(color.r,color.g,color.b);
 }
 
 Vector3D Triangle::centroid() const{
-  return((v0 + v1 + v2)* (1.0f/3.0f));
+  return((v0 + v1 + v2)* (1.0/3.0));
 }
 
 Vector3D Triangle::get_normal(Vector3D &at) const {
@@ -106,7 +103,7 @@ Vector3D Triangle::get_normal(Vector3D &at) const {
   auto x0 = v1 - at;
   auto x1 = v2 - at;
   auto x2 = v0 - at;
-  float area2 = N.length();           // twice the triangle area
+  double area2 = N.length();           // twice the triangle area
 
   auto w0 = x0.cross( v2 - at).dot(N) / (area2*area2);
   // area opposite v1 is area(P,v2,v0)
@@ -115,5 +112,36 @@ Vector3D Triangle::get_normal(Vector3D &at) const {
   auto w2 = x2.cross( v1 - at).dot(N) / (area2*area2);
 
   auto normal = n0 * w0 + n1 * w1 + n2 * w2;
-  return normal.normalized();
+  return normal;
+}
+
+Material Triangle::material()
+{
+  return mat;
+}
+
+Vector3D Triangle::max() const {
+
+  auto max_x = std::max({v0.x,v1.x,v2.x});
+  auto max_y = std::max({v0.y,v1.y,v2.y});
+  auto max_z = std::max({v0.z,v1.z,v2.z});
+
+  return Vector3D(max_x, max_y, max_z);
+}
+
+Vector3D Triangle::min() const {
+
+  auto min_x = std::min({v0.x,v1.x,v2.x});
+  auto min_y = std::min({v0.y,v1.y,v2.y});
+  auto min_z = std::min({v0.z,v1.z,v2.z});
+  return Vector3D(min_x, min_y, min_z);
+}
+
+bool Triangle::isOutOfBounds(Vector3D &mx, Vector3D &mn) const
+{
+  auto v_min = min();
+  if(v_min.x < mn.x ||v_min.y < mn.y ||v_min.z < mn.z ) return true; 
+  auto v_max = max();
+  if(v_max.x > mx.x ||v_max.y > mx.y ||v_max.z > mx.z ) return true; 
+  return false; 
 }

@@ -1,4 +1,4 @@
-#include "color.h"
+#include "core/color.h"
 
 Color::Color()
 {
@@ -7,7 +7,7 @@ Color::Color()
   b=0;
 }
 
-Color::Color(float r, float g, float b){
+Color::Color(double r, double g, double b){
   this->r = r;
   this->g = g;
   this->b = b;
@@ -27,7 +27,7 @@ Color Color::operator*(Color& other)
 {
     return Color(other.r*r, other.g*g, other.b*b);
 }
-Color& Color::operator*=(float lambda)
+Color& Color::operator*=(double lambda)
 {
   r *= lambda;
   g *= lambda;
@@ -35,7 +35,7 @@ Color& Color::operator*=(float lambda)
   return *this;
 }
 
-Color Color::operator*(float lambda) const
+Color Color::operator*(double lambda) const
 {
   return Color(r*lambda, g*lambda, b*lambda);
 }

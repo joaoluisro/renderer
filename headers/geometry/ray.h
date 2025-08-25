@@ -1,12 +1,13 @@
 #ifndef RAY_HEADER
 #define RAY_HEADER
-#include "vector3d.h"
+
+#include "geometry/vector3d.h"
 
 class Ray
 {
 public:
   Vector3D origin, direction;
-
+  int box_tests, leaf_tests;
 public:
   Ray(Vector3D const &origin, Vector3D const &direction);
   ~Ray();
@@ -14,7 +15,7 @@ public:
 
     return true;
   }
-  Vector3D at(float t) const{ 
+  Vector3D at(double t) const{ 
     return origin + t*direction; 
   }
 };

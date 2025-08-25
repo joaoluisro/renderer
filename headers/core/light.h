@@ -2,8 +2,8 @@
 #ifndef LIGHT_HEADER
 #define LIGHT_HEADER
 
-#include "vector3d.h"
-#include "color.h"
+#include "core/color.h"
+#include "geometry/vector3d.h"
 
 class Light
 {

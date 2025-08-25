@@ -21,7 +21,7 @@ set(SRC_FILES
     ${CMAKE_SOURCE_DIR}/main.cpp
 )
 file(GLOB ADDITIONAL_SOURCES
-    ${CMAKE_SOURCE_DIR}/src/*.cpp
+    ${CMAKE_SOURCE_DIR}/src/*/*.cpp
 )
 list(APPEND SRC_FILES ${ADDITIONAL_SOURCES})
 

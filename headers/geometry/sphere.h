@@ -2,23 +2,28 @@
 #ifndef SPHERE_HEADER
 #define SPHERE_HEADER
 
-#include "baseObject.h"
+#include "geometry/baseObject.h"
 
 class Sphere : public BaseObject{
   public:
-    Sphere(Vector3D &o, float r, const Color& c) : 
+    Sphere(Vector3D &o, double r, const Color& c) : 
     origin(o),radius(r), color(c){}
     ~Sphere();
 
-    float intersects(Ray &r) const override;
+    double intersects(Ray &r) const override;
     Vector3D get_normal(Vector3D &at) const override;
     Color get_color() const override;
-    void translate(Vector3D &to) override;
+    Material material() override;
     Vector3D centroid() const override; 
+    Vector3D max() const override;
+    Vector3D min() const override;
+    bool isOutOfBounds(Vector3D &mx, Vector3D &mn) const override;
+
   private:
-    float radius;
+    double radius;
     Vector3D origin;
     Color color;
+    Material mat;
 };
 
 #endif

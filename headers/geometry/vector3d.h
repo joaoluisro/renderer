@@ -7,35 +7,39 @@
 class Vector3D
 {
 public:
-  float x,y,z;
+  double x,y,z;
 
 public:
   Vector3D();
-  Vector3D(float x, float y, float z);
+  Vector3D(double x, double y, double z);
 
   ~Vector3D();
   
   Vector3D& operator=(Vector3D const&) = default;
 
   Vector3D operator+(Vector3D const& other) const;
-  
+
   Vector3D operator-(Vector3D const& other) const;
   
-  float dot(Vector3D const& other) const;
+  double operator[](int axis) const;
+
+  double dot(Vector3D const& other) const;
   
   Vector3D cross(Vector3D const& other) const;
   
-  Vector3D operator*(float lambda) const;
+  Vector3D operator*(double lambda) const;
+  Vector3D operator+(double lambda) const;
 
-  friend Vector3D operator*(float s, const Vector3D& v);
+  friend Vector3D operator*(double s, const Vector3D& v);
 
-  friend Vector3D operator/(float s, const Vector3D& v);
+  friend Vector3D operator/(double s, const Vector3D& v);
 
-  float length() const;
+  double length() const;
   
   Vector3D normalized() const;
   void normalize();
   void info();
+  Vector3D to_blender() const;
 };
 
 #endif
