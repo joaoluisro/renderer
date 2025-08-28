@@ -37,52 +37,43 @@ Triangle::~Triangle()
 
 double Triangle::intersects(Ray &r) const 
 {
-  // Compute the plane's normal
   Vector3D v0v1 = v1 - v0;
   Vector3D v0v2 = v2 - v0;
-  // No need to normalize
   Vector3D N = v0v1.cross(v0v2); // N
 
-  // Step 1: Finding P
-  double kEpsilon = 1e-6;
+  double epsilon = 1e-6;
   // Check if the ray and plane are parallel
-  double NdotRayDirection = N.dot(r.direction);
-  if (fabs(NdotRayDirection) < kEpsilon) // Almost 0
-      return -1; // They are parallel, so they don't intersect!
+  double n_dot_r = N.dot(r.direction);
+  if (fabs(n_dot_r) < epsilon) // Almost 0
+      return -1;
 
-  // Compute d parameter using equation 2
   double d = -N.dot(v0);
   
-  // Compute t (equation 3)
-  double t = -(N.dot(r.origin) + d) / NdotRayDirection;
+  double t = -(N.dot(r.origin) + d) / n_dot_r;
   
   // Check if the triangle is behind the ray
-  if (t < 0) return -1; // The triangle is behind
+  if (t < 0) return -1;
 
-  // Compute the intersection point using equation 1
+  // Muller-Trombore
   Vector3D P = r.origin + t * r.direction;
 
-  // Step 2: Inside-Outside Test
-  Vector3D Ne; // Vector perpendicular to triangle's plane
+  Vector3D Ne;
 
-  // Test sidedness of P w.r.t. edge v0v1
   Vector3D v0p = P - v0;
   Ne = v0v1.cross(v0p);
-  if (N.dot(Ne) < 0) return -1; // P is on the right side
+  if (N.dot(Ne) < 0) return -1; 
 
-  // Test sidedness of P w.r.t. edge v2v1
   Vector3D v2v1 = v2 - v1;
   Vector3D v1p = P - v1;
   Ne = v2v1.cross(v1p);
-  if (N.dot(Ne) < 0) return -1; // P is on the right side
+  if (N.dot(Ne) < 0) return -1; 
 
-  // Test sidedness of P w.r.t. edge v2v0
   Vector3D v2v0 = v0 - v2; 
   Vector3D v2p = P - v2;
   Ne = v2v0.cross(v2p);
-  if (N.dot(Ne) < 0) return -1; // P is on the right side
+  if (N.dot(Ne) < 0) return -1; 
 
-  return t; // The ray hits the triangle
+  return t;
 }
 
 Color Triangle::get_color() const
@@ -95,7 +86,6 @@ Vector3D Triangle::centroid() const{
 }
 
 Vector3D Triangle::get_normal(Vector3D &at) const {
-  // Compute full‐triangle normal
   Vector3D  e0   = v1 - v0;
   Vector3D  e1   = v2 - v0;
   Vector3D  N    = e0.cross(e1);
@@ -103,14 +93,13 @@ Vector3D Triangle::get_normal(Vector3D &at) const {
   auto x0 = v1 - at;
   auto x1 = v2 - at;
   auto x2 = v0 - at;
-  double area2 = N.length();           // twice the triangle area
+  double area2 = N.length();  
 
   auto w0 = x0.cross( v2 - at).dot(N) / (area2*area2);
-  // area opposite v1 is area(P,v2,v0)
   auto w1 = x1.cross( v0 - at).dot(N) / (area2*area2);
-  // area opposite v2 is area(P,v0,v1)
   auto w2 = x2.cross( v1 - at).dot(N) / (area2*area2);
 
+  // interpolates
   auto normal = n0 * w0 + n1 * w1 + n2 * w2;
   return normal;
 }

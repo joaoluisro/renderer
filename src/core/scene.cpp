@@ -92,10 +92,8 @@ inline Color Scene::computePhong(Vector3D &p,
 
     Vector3D N = obj->get_normal(p).normalized();
     double ndotl = N.dot(L);
-    // if(ndotl < 0.0) ndotl = -ndotl;
     if(ndotl < 0.0) continue;
 
-    // if(isShadowed(L, p, obj)) continue;
     if(isShadowed(light->position, p, obj)) continue;
 
     // Diffuse component
@@ -108,7 +106,6 @@ inline Color Scene::computePhong(Vector3D &p,
 
     final_color += diff + spec;
   }
-  // cout << final_color.r << "\n";
   return final_color;
 }
 
@@ -128,27 +125,16 @@ inline Color Scene::traceRay(Ray &r, int depth) const
     max_hits = r.box_tests;
   }
   auto local_color = computePhong(intersection_point, closest);
+
   if(depth <= 0)
   {
     return local_color;
   }
 
-  Material mat = closest->material();
+  // TODO: Add material and texture support
+  // Material mat = closest->material();
   
-  if (REFLECT) 
-  {
-    // auto reflection_origin    = intersection_point;
-    // Vector3D D = r.direction;
-    // Vector3D N = closest->get_normal(intersection_point);
-    // auto R = D - 2*(D.dot(N) * N);
-    // auto reflection_direction = R;
-
-    // Ray reflection_ray(reflection_origin, reflection_direction);
-    // auto reflected_color = traceRay(reflection_ray, depth - 1);
-    // local_color += reflected_color * 0.1;
-  }
-
-  return local_color;
+  return local_color * (1/(t));
 }
 
 
@@ -173,13 +159,14 @@ void Scene::render(const char *filename, int width, int height)
       frame_buffer.set(i,j,final_color);
     }
   }
-  // cout << total_box;
+  cout << "Total box tests  : " << total_box << "\n";
+  cout << "Total leaf tests : " << total_leaf << "\n";
 
   writeToPPM(filename, frame_buffer, width, height);
 }
 
 
-inline float Scene::computePhongRadiance(Vector3D &p,
+inline float Scene::computePhongHeatmap(Vector3D &p,
   shared_ptr<BaseObject> obj) const
 {
 
@@ -195,11 +182,7 @@ inline float Scene::computePhongRadiance(Vector3D &p,
 
     Vector3D N = obj->get_normal(p).normalized();
     double ndotl = N.dot(L);
-    if(ndotl < 0.0) ndotl = -ndotl;
-    // if(ndotl < 0.0) continue;
-
-    // if(isShadowed(L, p, obj)) continue;
-    // if(isShadowed(light->position, p, obj)) continue;
+    if(ndotl < 0.0) continue;
 
     // Diffuse component
     float diff = (obj_color* ndotl);
@@ -216,22 +199,7 @@ inline float Scene::computePhongRadiance(Vector3D &p,
   return final_color/2;
 }
 
-
-
-Color jet(float n)
-{
-  // auto t = std::clamp(n, 0.0f, 1.0f);
-  auto t = n;
-  // each channel is a piecewise “tent” function:
-  double r = 1.5f - std::fabs(4.0f*t - 3.0f);
-  double g = 1.5f - std::fabs(4.0f*t - 2.0f);
-  double b = 1.5f - std::fabs(4.0f*t - 1.0f);
-  // convert to 8‑bit
-  return Color(r,g,b);
-}
-
-
-// /// Convert HSV (h in [0,360), s,v in [0,1]) to RGB in [0,1]
+// Convert HSV (h in [0,360), s,v in [0,1]) to RGB in [0,1]
 Color hsv2rgb(float h, float s, float v) {
   float c = v * s;
   float h_prime = std::fmod(h / 60.0f, 6.0f);
@@ -249,70 +217,13 @@ Color hsv2rgb(float h, float s, float v) {
   return Color(rp + m, gp + m, bp + m);
 }
 
-/// Rainbow colormap: t=0→blue, t=0.5→green, t=1→red
+// Rainbow colormap: t=0 -> blue, t=0.5 -> green, t=1 -> red
 Color rainbow(float t) 
 {
-  // map t to hue angle: 240° (blue) → 0° (red)
+  // map t to hue angle: 240deg (blue) → 0deg (red)
   float hue = (1.0f - t) * 240.0f;
-  // cout << "hue " << hue << "\n";
   return hsv2rgb(hue, 1.0f, 1.0f);
 }
-
-Color plasma(float t) {
-  // 1) clamp to [0,1]
-  // 2) control points at t = 0, 0.2, 0.4, 0.6, 0.8, 1.0
-  static  size_t N = 6;
-  static  Color C[6] = {
-      Color(0.050383f, 0.029803f, 0.527975f),  // deep purple
-      Color(0.309868f, 0.154282f, 0.701817f),  // dark blue–purple
-      Color(0.597594f, 0.219739f, 0.604556f),  // blue–pink
-      Color(0.815384f, 0.282139f, 0.368623f),  // orange–pink
-      Color(0.959478f, 0.536779f, 0.181176f),  // orange–yellow
-      Color(0.988362f, 0.998364f, 0.644924f)   // bright yellow
-  };
-
-  // 3) locate segment
-  float ft = t * (N - 1);                // scale to [0, N-1]
-  size_t i = std::min((size_t)std::floor(ft), N - 2);
-  float  u = ft - float(i);              // local [0,1] within segment
-
-  // 4) linearly interpolate between C[i] and C[i+1]
-  return Color(
-      (1 - u) * C[i].r + u * C[i+1].r,
-      (1 - u) * C[i].g + u * C[i+1].g,
-      (1 - u) * C[i].b + u * C[i+1].b
-  );
-}
-
-
-/// Viridis colormap (5‑point linear interpolation)
-Color viridis(float t) {
-  // 1) clamp to [0,1]
-  t = std::clamp(t, 0.0f, 1.0f);
-
-  // 2) control points at t = 0,0.25,0.5,0.75,1.0
-  static  size_t N = 5;
-  static  Color C[5] = {
-      Color(0.267004f, 0.004874f, 0.329415f),  // deep blue
-      Color(0.190631f, 0.407061f, 0.556089f),  // blue‑cyan
-      Color(0.208030f, 0.718701f, 0.472873f),  // green‑cyan
-      Color(0.622255f, 0.783682f, 0.266941f),  // yellow‑green
-      Color(0.993248f, 0.906157f, 0.143936f)   // yellow
-  };
-
-  // 3) find which segment we’re in
-  float ft = t * (N - 1);              // scale to [0, N-1]
-  size_t i = std::min((size_t)std::floor(ft), N - 2);
-  float  u = ft - float(i);            // local [0,1] within segment
-
-  // 4) lerp between C[i] and C[i+1]
-  return Color(
-      (1 - u) * C[i].r     + u * C[i+1].r,
-      (1 - u) * C[i].g     + u * C[i+1].g,
-      (1 - u) * C[i].b     + u * C[i+1].b
-  );
-}
-
 
 inline void Scene::traceRayHeatmap(Ray &r, vector<float> &radiance, vector<float> &hits) const
 {
@@ -331,7 +242,7 @@ inline void Scene::traceRayHeatmap(Ray &r, vector<float> &radiance, vector<float
   auto intersection_point = r.at(t);
 
   hits.push_back(r.box_tests);
-  radiance.push_back(computePhongRadiance(intersection_point, closest));
+  radiance.push_back(computePhongHeatmap(intersection_point, closest));
   if (r.box_tests > max_hits)
   {
     max_hits = r.box_tests;
@@ -347,7 +258,7 @@ void Scene::render_heatmap(const char *filename, int width, int height, int &box
   long unsigned int total_leaf = 0;
   long unsigned int total_box = 0;
 
-  // #pragma omp parallel for collapse(2)
+  #pragma omp parallel for collapse(2)
   for(auto i = 0; i < height; i++)
   {
     for(auto j = 0; j < width; j++)
@@ -368,18 +279,18 @@ void Scene::render_heatmap(const char *filename, int width, int height, int &box
   {
     for(auto j = 0; j < width; j++)
     {
-      float gamma = 1.1f;                    // try 1.5 → 3.0
+      // should be 1.5 -> 3.0
+      float gamma = 1.1f;  
+
       float color_t = hits[k]/max_hits;
       float t_corr = std::pow(color_t, gamma);
-      // t_corr = std::clamp(t_corr, 0.0f, 1.0f);
       Color final_color = (rainbow(t_corr));
       if(radiance[k] == 0) final_color = BACKGROUND_COLOR;
-      // final_color = final_color * radiance[k];
       frame_buffer.set(i,j,final_color);
       k++;
-      
     }
   }
+
   n_test_max = max_hits;
   writeToPPM(filename, frame_buffer, width, height);
 }

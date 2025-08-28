@@ -17,7 +17,7 @@ double Sphere::intersects(Ray &r) const
   // Discriminant
   double disc = B*B - 4.0f*A*C;
   if (disc < 0.0f) {
-      // no real roots ⇒ no intersection
+      // no real roots, no intersection
       return -1;
   }
 
@@ -26,7 +26,7 @@ double Sphere::intersects(Ray &r) const
   double inv2A   = 0.5f / A;
   double t0 = (-B - sqrt_disc) * inv2A;
   double t1 = (-B + sqrt_disc) * inv2A;
-  // If either t0 or t1 is ≥ 0, the sphere is hit in front of the r origin
+  // If either t0 or t1 is >= 0, the sphere is hit in front of the r origin
   return(t0);
 }
 

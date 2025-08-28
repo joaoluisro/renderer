@@ -37,7 +37,7 @@ class Scene{
   
 
     inline void traceRayHeatmap(Ray &r, vector<float> &radiance, vector<float> &hits) const;
-    inline float computePhongRadiance(Vector3D &p,  shared_ptr<BaseObject> obj) const;
+    inline float computePhongHeatmap(Vector3D &p,  shared_ptr<BaseObject> obj) const;
     void render_heatmap(const char *filename, int width, int height, int &box_tests, int &leaf_tests, int &n_test_max);
   
   private:

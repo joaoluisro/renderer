@@ -183,7 +183,6 @@ shared_ptr<BVH> buildSAHBVH(vector<shared_ptr<BaseObject>>& faces, int threshold
       double left_area  = 2*(left_axis0_length * extent[axis1]) + 2*(left_axis0_length * extent[axis2]) + 2*(extent[axis2] * extent[axis1]);
       auto right_area = 2*(right_axis0_length * extent[axis1]) + 2*(right_axis0_length * extent[axis2]) + 2*(extent[axis2] * extent[axis1]);
 
-
       auto cost = traversal_time + (left_area/total_area)*(left_count) + (right_area/total_area)*(right_count);
       if(cost < best_cost)
       {
@@ -229,41 +228,44 @@ inline bool slabAABB(const Ray& r,
                      double& tNear,
                      double& tFar)
 {
-    tNear = 0.0;
-    tFar  = std::numeric_limits<double>::infinity();
+  tNear = 0.0;
+  tFar  = std::numeric_limits<double>::infinity();
 
-    for (int i = 0; i < 3; ++i) {
-        double o = r.origin[i];
-        double d = r.direction[i];
+  for (int i = 0; i < 3; ++i) 
+  {
+    double o = r.origin[i];
+    double d = r.direction[i];
 
-        if (fabs(d) < 1e-7) {
-            if (o < bmin[i] || o > bmax[i]) return false;
-            continue;
-        }
-
-        double invD = 1.0 / d;
-        double t0   = (bmin[i] - o) * invD;
-        double t1   = (bmax[i] - o) * invD;
-        if (invD < 0.0) std::swap(t0, t1);
-
-        tNear = std::max(tNear, t0);
-        tFar  = std::min(tFar, t1);
-        if (tFar < tNear) return false;
+    if (fabs(d) < 1e-7)
+    {
+      if (o < bmin[i] || o > bmax[i]) return false;
+      continue;
     }
-    return tFar >= 0.0;
+
+    double invD = 1.0 / d;
+    double t0   = (bmin[i] - o) * invD;
+    double t1   = (bmax[i] - o) * invD;
+    if (invD < 0.0) std::swap(t0, t1);
+
+    tNear = std::max(tNear, t0);
+    tFar  = std::min(tFar, t1);
+    if (tFar < tNear) return false;
+  }
+  
+  return tFar >= 0.0;
 }
 
 
 double BVH::hit(std::shared_ptr<BaseObject> &closest, Ray &r, double bestT)
 {
 
-  // 1. Test this node's bounding box
+  // test this node's bounding box
   double tNear, tFar;
   if (!slabAABB(r, min, max, tNear, tFar) || tNear > bestT) 
       return -1.0;  // No hit with this node
 
   r.box_tests+= 1;
-  // 2. If this is a leaf node, test all faces
+  // if leaf node, test all faces
   if (is_leaf) {
       double closestT = bestT;
       std::shared_ptr<BaseObject> closestObj = nullptr;
@@ -281,10 +283,10 @@ double BVH::hit(std::shared_ptr<BaseObject> &closest, Ray &r, double bestT)
           closest = closestObj;
           return closestT;
       }
-      return -1.0; // No hit among faces
+      return -1.0;
   }
   
-  // 3. If not a leaf, traverse children (closest-first)
+  // if not a leaf, traverse children (closest-first)
   double tNearL = std::numeric_limits<double>::infinity();
   double tFarL  = std::numeric_limits<double>::infinity();
   double tNearR = std::numeric_limits<double>::infinity();
@@ -293,42 +295,61 @@ double BVH::hit(std::shared_ptr<BaseObject> &closest, Ray &r, double bestT)
   bool hitLeft  = left  && slabAABB(r, left->min, left->max, tNearL, tFarL);
   bool hitRight = right && slabAABB(r, right->min, right->max, tNearR, tFarR);
 
-  if (!hitLeft && !hitRight) return -1.0;
+  if(!hitLeft && !hitRight) return -1.0;
+
   std::shared_ptr<BaseObject> leftClosest, rightClosest;
   double leftHit  = -1.0, rightHit = -1.0;
 
-  // Visit nearer child first
-  if (hitLeft && hitRight) {
-      if (tNearL < tNearR) {
-          leftHit = left->hit(leftClosest, r, bestT);
-          if (leftHit > 0.0) bestT = leftHit;  // tighten bestT
-          rightHit = right->hit(rightClosest, r, bestT);
-      } else {
-          rightHit = right->hit(rightClosest, r, bestT);
-          if (rightHit > 0.0) bestT = rightHit;
-          leftHit = left->hit(leftClosest, r, bestT);
-      }
-  } else if (hitLeft) {
+  // visit nearer child first
+  if(hitLeft && hitRight) 
+  {
+    if (tNearL < tNearR) 
+    {
       leftHit = left->hit(leftClosest, r, bestT);
-  } else if (hitRight) {
+      if (leftHit > 0.0) bestT = leftHit; 
+
+      rightHit = right->hit(rightClosest, r, bestT);
+    } 
+    else 
+    {
+      rightHit = right->hit(rightClosest, r, bestT);
+      if (rightHit > 0.0) bestT = rightHit;
+
+      leftHit = left->hit(leftClosest, r, bestT);
+    }
+  } 
+  else if(hitLeft) 
+  {
+      leftHit = left->hit(leftClosest, r, bestT);
+  } 
+  else if(hitRight) 
+  {
       rightHit = right->hit(rightClosest, r, bestT);
   }
 
-  // 4. Determine which child produced the closest hit
-  if (leftHit > 0.0 && rightHit > 0.0) {
-      if (leftHit < rightHit) {
-          closest = leftClosest;
-          return leftHit;
-      } else {
-          closest = rightClosest;
-          return rightHit;
-      }
-  } else if (leftHit > 0.0) {
+  // determine which child produced the closest hit
+  if(leftHit > 0.0 && rightHit > 0.0) 
+  {
+    if(leftHit < rightHit) 
+    {
       closest = leftClosest;
       return leftHit;
-  } else if (rightHit > 0.0) {
+    } 
+    else 
+    {
       closest = rightClosest;
       return rightHit;
+    }
+  } 
+  else if (leftHit > 0.0) 
+  {
+    closest = leftClosest;
+    return leftHit;
+  } 
+  else if (rightHit > 0.0) 
+  {
+    closest = rightClosest;
+    return rightHit;
   }
 
   return -1.0;

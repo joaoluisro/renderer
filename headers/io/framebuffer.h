@@ -38,9 +38,9 @@ public:
       px.b = (px.b*(1 + (px.b/(max_b * max_b)))/(1 + px.b)) * 255.0;
     }
     // for (auto &px : data) {
-      // px.r = (px.r/(1 + px.r)) * 255.0;
-      // px.g = (px.g/(1 + px.g)) * 255.0;
-      // px.b = (px.b/(1 + px.b)) * 255.0;
+    //   px.r = (px.r/(1 + px.r)) * 255.0;
+    //   px.g = (px.g/(1 + px.g)) * 255.0;
+    //   px.b = (px.b/(1 + px.b)) * 255.0;
     // }
   }
   void set(int i, int j, Color &c)

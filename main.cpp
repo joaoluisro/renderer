@@ -126,7 +126,7 @@ void render_sphere(int width, int height)
   Camera camera(c_origin, c_viewpoint, fov, width, height);
 
   vector<shared_ptr<Light>> lights;
-  lights.push_back(make_shared<Light>(Vector3D(5,5,5).to_blender(), Color(1,1,1)));
+  lights.push_back(make_shared<Light>(Vector3D(5,5,5).to_blender(), Color(50,50,50)));
 
   Scene main_scene(camera, scene_meshes, lights);
   
@@ -160,15 +160,29 @@ void benchmark(const char* filename, int width, int height, int threshold, strin
 
   vector<shared_ptr<Light>> lights;
 
-  Vector3D c_origin(0,-13,5), c_viewpoint(0,0,0);
+
+  // Vector3D c_origin(-11.8798,18.7134,9.98171), c_viewpoint(0,0,0);
+  // lights.push_back(make_shared<Light>(Vector3D(-3,18,13).to_blender(), Color(50,50,50)));
+
+  Vector3D c_origin(0,-8,5), c_viewpoint(0,0,0);
+
+  // Vector3D c_origin(6.70319,0.863768,5.25675), c_viewpoint(0,0,0);
+  // lights.push_back(make_shared<Light>(Vector3D(6.70319,0.863768,5.25675).to_blender(), Color(10,10,10)));
+  // lights.push_back(make_shared<Light>(Vector3D(6.70319,1.863768,5.25675).to_blender(), Color(10,10,10)));
+  // lights.push_back(make_shared<Light>(Vector3D(6.70319,2.863768,5.25675).to_blender(), Color(10,10,10)));
+  Vector3D light_pos;
+  light_pos = c_origin + Vector3D(3,3,0);
+  lights.push_back(make_shared<Light>(light_pos.to_blender(), Color(10,10,10)));
+ 
+  // Vector3D c_origin(0,-13,5), c_viewpoint(0,0,0);
 
   // lights.push_back(make_shared<Light>((c_origin + Vector3D(0,1,0)).to_blender(), Color(1,1,1)));
-  lights.push_back(make_shared<Light>(Vector3D(3.5,-4.5,6).to_blender(), Color(1,1,1)));
+  // lights.push_back(make_shared<Light>(Vector3D(3.5,-4.5,6).to_blender(), Color(1,1,1)));
   // lights.push_back(make_shared<Light>(Vector3D(3.5,-4.5,7).to_blender(), Color(1,1,1)));
   // lights.push_back(make_shared<Light>(Vector3D(3.5,-3.5,6).to_blender(), Color(1,1,1)));
   // lights.push_back(make_shared<Light>(Vector3D(3.5,-3.5,7).to_blender(), Color(1,1,1)));
 
-  const double fov = 45.0;
+  const double fov = 30.0;
 
   Camera camera(c_origin, c_viewpoint, fov, width, height);
 
@@ -208,6 +222,6 @@ int main(int argc, char *argv[])
   int height = atoi(argv[3]);
   auto leaf_threshold = atoi(argv[4]);
   std::string bvh_type = argv[5];
-  // benchmark(filename, width, height,leaf_threshold,bvh_type);
-  render_sphere(width,height);
+  benchmark(filename, width, height,leaf_threshold,bvh_type);
+  // render_sphere(width,height);
 }
