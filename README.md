@@ -1,48 +1,31 @@
 # Physically Based Renderer
 
-3D mesh renderer using the Phong Illumination model.
+A renderer written in C++ using CImg and Tinyobjloader to render photo-realistic scenes through ray tracing.
 
+## Building
+```
+cmake -S . -B build -G Ninja \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+```
 
+After creating a build directory, use `ninja` to compile the source code
 
-# Introduction
+```
+cd build && ninja
+```
 
-## Motivation
+## Usage
 
-## Physically based rendering
+```
+./renderer [.obj path] [width] [height] [BVH param] [BVH type]
+```
 
-## Ray tracing
+- BVH param dictates either the primitive/leaf in Median/Midpoint schemes or the bin count in SAH.
+- BVH types available are: `median`, `midpoint` and `sah`.
 
+Example: 
 
-# Development
-
-## Camera
-  ### Camera-World Transform
-  ### Parameters
-
-## Geometry
-  ## Sphere
-  ## Triangle
-  ## Mesh
-
-## Illumination Model
-  ### Rendering Equation
-  ### Diffuse/Specular
-  ### Phong Model
-  ### Phong Shading
-
-## Color
-  ## RGB
-  ## Tone mapping
-  ## Reinhard
-
-## Ray Tracing
-  ### Algorithm
-
-## Acceleration Structures
-  ## BVH
-  ## Median
-  ## Midpoint
-  ## SAH
-
-# Results
-
+```
+./renderer lucy.obj 1024 1024 16 sah
+```
