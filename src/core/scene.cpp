@@ -16,7 +16,7 @@ Scene::~Scene()
 {
 }
 
-void writeToPPM(const char* filename, Framebuffer &frame_buffer, int width, int height)
+void writeToPPM(const char* filename, FrameBuffer &frame_buffer, int width, int height)
 {
   frame_buffer.clamp();
   CImg<unsigned char> image(width, height, 1, 3,0.5);
@@ -140,7 +140,7 @@ inline Color Scene::traceRay(Ray &r, int depth) const
 
 void Scene::render(const char *filename, int width, int height)
 {
-  Framebuffer frame_buffer(width, height);
+  FrameBuffer frame_buffer(width, height);
   long unsigned int total_leaf = 0;
   long unsigned int total_box = 0;
 
@@ -254,7 +254,7 @@ void Scene::render_heatmap(const char *filename, int width, int height, int &box
   vector<float> radiance;
   vector<float> hits;
 
-  Framebuffer frame_buffer(width, height);
+  FrameBuffer frame_buffer(width, height);
   long unsigned int total_leaf = 0;
   long unsigned int total_box = 0;
 

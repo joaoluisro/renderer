@@ -74,14 +74,16 @@ Vector3D Vector3D::normalized() const
   return Vector3D(this->x/len, this->y/len, this->z/len);
 }
 
-void Vector3D::normalize() {
+void Vector3D::normalize() 
+{
   double len = this->length();
   x = x/len;
   y = y/len; 
   z = z/len;
 }
 
-void Vector3D::info(){
+void Vector3D::info()
+{
   std::cout << "[" << x << "," << y << "," << z << "]\n";
 }
 
