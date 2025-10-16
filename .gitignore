@@ -16,3 +16,4 @@ cmake_install.cmake
 Makefile
 out
 tests
+*.user

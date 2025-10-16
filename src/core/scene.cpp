@@ -258,7 +258,7 @@ void Scene::render_heatmap(const char *filename, int width, int height, int &box
   long unsigned int total_leaf = 0;
   long unsigned int total_box = 0;
 
-  #pragma omp parallel for collapse(2)
+//  #pragma omp parallel for collapse(2)
   for(auto i = 0; i < height; i++)
   {
     for(auto j = 0; j < width; j++)

@@ -15,6 +15,7 @@
 #include "bvh/mesh.h"
 
 #include "io/wavefront_loader.h"
+#include "io/parsing.h"
 
 using namespace std;
 
@@ -60,7 +61,7 @@ void benchmark(const char* filename, int width, int height, int threshold, strin
   Scene main_scene(camera, scene_meshes, lights);
   int box_tests, leaf_tests;
 
-  main_scene.render_heatmap("output-heatmap.ppm", width, height, box_tests, leaf_tests, n_test_box_max);
+//  main_scene.render_heatmap("output-heatmap.ppm", width, height, box_tests, leaf_tests, n_test_box_max);
   main_scene.render("output.ppm", width, height);
 
 #ifdef DEBUG_BUILD
@@ -76,6 +77,9 @@ void benchmark(const char* filename, int width, int height, int threshold, strin
 
 int main(int argc, char *argv[])
 {
+  const char *f = argv[6];
+  auto s = Parse::scene_file(f);
+  return 0;
   if(argc < 6)
   {
     std::cerr << "Missing args." << std::endl;
