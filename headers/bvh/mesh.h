@@ -25,7 +25,7 @@ public:
     int leaf_threshold,
     BVHType treeType);
   ~Mesh();
-  double hit(shared_ptr<BaseObject> &closest, Ray &r);
+  double hit(shared_ptr<BaseObject> &closest, Ray r);
  
   public:
     shared_ptr<BVH> bbox;

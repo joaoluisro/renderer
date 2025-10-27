@@ -30,7 +30,7 @@ class BVH {
     
     ~BVH(){};
 
-    double hit(shared_ptr<BaseObject> &closest, Ray &r, double bestT);
+    double hit(shared_ptr<BaseObject> &closest, const Ray &r, double bestT);
 };
 
 namespace BvhBBox{

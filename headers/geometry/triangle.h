@@ -12,7 +12,7 @@ class Triangle : public BaseObject{
 
     ~Triangle();
 
-    double intersects(Ray &r) const override;
+    double intersects(Ray r) const override;
     Vector3D get_normal(Vector3D &at) const override;
     Color get_color() const override;
     Vector3D centroid() const override; 

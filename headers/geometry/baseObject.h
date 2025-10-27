@@ -22,7 +22,7 @@ class BaseObject
 {
 public:
   virtual ~BaseObject() = default;
-  virtual double intersects(Ray &r) const = 0;  
+  virtual double intersects(Ray r) const = 0;
   virtual Vector3D get_normal(Vector3D &at) const = 0;
   virtual Color get_color() const = 0;
   virtual Vector3D centroid() const = 0;

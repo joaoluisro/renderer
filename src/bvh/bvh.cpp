@@ -2,6 +2,7 @@
 using namespace std;
 
 #define THRESHOLD 4
+#define EPSILON 1e-8
 
 namespace BvhBBox
 {
@@ -236,7 +237,7 @@ inline bool slabAABB(const Ray& r,
     double o = r.origin[i];
     double d = r.direction[i];
 
-    if (fabs(d) < 1e-7)
+    if (fabs(d) < 1e-4)
     {
       if (o < bmin[i] || o > bmax[i]) return false;
       continue;
@@ -255,16 +256,14 @@ inline bool slabAABB(const Ray& r,
   return tFar >= 0.0;
 }
 
-
-double BVH::hit(std::shared_ptr<BaseObject> &closest, Ray &r, double bestT)
+double BVH::hit(std::shared_ptr<BaseObject> &closest, const Ray &r, double bestT)
 {
 
   // test this node's bounding box
   double tNear, tFar;
-  if (!slabAABB(r, min, max, tNear, tFar) || tNear > bestT) 
+  if (!slabAABB(r, min, max, tNear, tFar) || tNear > bestT)
       return -1.0;  // No hit with this node
 
-  r.box_tests+= 1;
   // if leaf node, test all faces
   if (is_leaf) {
       double closestT = bestT;
@@ -272,9 +271,8 @@ double BVH::hit(std::shared_ptr<BaseObject> &closest, Ray &r, double bestT)
 
       for (auto& face : faces) {
           double t = face->intersects(r);
-          r.leaf_tests += 1;
 
-          if (t > 0.0 && t < closestT) {
+          if (t > EPSILON && t < closestT) {
               closestT = t;
               closestObj = face;
           }
@@ -301,52 +299,52 @@ double BVH::hit(std::shared_ptr<BaseObject> &closest, Ray &r, double bestT)
   double leftHit  = -1.0, rightHit = -1.0;
 
   // visit nearer child first
-  if(hitLeft && hitRight) 
+  if(hitLeft && hitRight)
   {
-    if (tNearL < tNearR) 
+    if (tNearL < tNearR)
     {
       leftHit = left->hit(leftClosest, r, bestT);
-      if (leftHit > 0.0) bestT = leftHit; 
+      if (leftHit > 0.0) bestT = leftHit;
 
       rightHit = right->hit(rightClosest, r, bestT);
-    } 
-    else 
+    }
+    else
     {
       rightHit = right->hit(rightClosest, r, bestT);
       if (rightHit > 0.0) bestT = rightHit;
 
       leftHit = left->hit(leftClosest, r, bestT);
     }
-  } 
-  else if(hitLeft) 
+  }
+  else if(hitLeft)
   {
       leftHit = left->hit(leftClosest, r, bestT);
-  } 
-  else if(hitRight) 
+  }
+  else if(hitRight)
   {
       rightHit = right->hit(rightClosest, r, bestT);
   }
 
   // determine which child produced the closest hit
-  if(leftHit > 0.0 && rightHit > 0.0) 
+  if(leftHit > 0.0 && rightHit > 0.0)
   {
-    if(leftHit < rightHit) 
+    if(leftHit < rightHit)
     {
       closest = leftClosest;
       return leftHit;
-    } 
-    else 
+    }
+    else
     {
       closest = rightClosest;
       return rightHit;
     }
-  } 
-  else if (leftHit > 0.0) 
+  }
+  else if (leftHit > 0.0)
   {
     closest = leftClosest;
     return leftHit;
-  } 
-  else if (rightHit > 0.0) 
+  }
+  else if (rightHit > 0.0)
   {
     closest = rightClosest;
     return rightHit;

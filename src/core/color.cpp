@@ -1,5 +1,5 @@
 #include "core/color.h"
-
+#include <iostream>
 Color::Color()
 {
   r=0;
@@ -46,4 +46,9 @@ Color& Color::operator+=(const Color &other)
   g += other.g;
   b += other.b;
   return *this;
+}
+
+void Color::info()
+{
+    std::cout << r << " " << g << " " << b << "\n";
 }

@@ -4,7 +4,7 @@ Sphere::~Sphere()
 {
 }
 
-double Sphere::intersects(Ray &r) const
+double Sphere::intersects(Ray r) const
 {
   // Vector from sphere this->origin to r origin
   Vector3D L = r.origin - this->origin;
