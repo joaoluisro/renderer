@@ -6,4 +6,4 @@
 
 int parse_obj(const char *filename, vector<shared_ptr<Mesh>> &mesh, int threshold, BVHType treeType);
 
-#endif 
+#endif

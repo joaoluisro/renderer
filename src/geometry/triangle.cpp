@@ -2,7 +2,8 @@
 
 #include "geometry/triangle.h"
 
-#define EPS 1e-6f
+#define EPS 1e-8
+
 Triangle::Triangle(
   Vector3D v0, 
   Vector3D v1, 
@@ -35,24 +36,29 @@ Triangle::~Triangle()
 {
 }
 
-double Triangle::intersects(Ray &r) const 
+double Triangle::intersects(Ray r) const
 {
   Vector3D v0v1 = v1 - v0;
   Vector3D v0v2 = v2 - v0;
   Vector3D N = v0v1.cross(v0v2); // N
 
-  double epsilon = 1e-6;
   // Check if the ray and plane are parallel
   double n_dot_r = N.dot(r.direction);
-  if (fabs(n_dot_r) < epsilon) // Almost 0
+  if (fabs(n_dot_r) < EPS) // Almost 0
+  {
       return -1;
+  }
 
   double d = -N.dot(v0);
   
   double t = -(N.dot(r.origin) + d) / n_dot_r;
   
   // Check if the triangle is behind the ray
-  if (t < 0) return -1;
+  if (t < 0)
+  {
+      return -1;
+  }
+
 
   // Muller-Trombore
   Vector3D P = r.origin + t * r.direction;

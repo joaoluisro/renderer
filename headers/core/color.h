@@ -14,6 +14,7 @@ class Color
     Color operator*(double lambda) const;
 
     Color& operator+=(const Color &other);
+    void info();
   public:
     double r,g,b;
 };

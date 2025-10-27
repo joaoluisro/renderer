@@ -15,6 +15,8 @@ class FrameBuffer{
     const Pixel& at(int i, int j) const;
     void clamp();
     void set(int i, int j, Color &c);
+    void writeToPPM(const char* filename, int width, int height);
+
   private: 
     int width, height;
     std::vector<Pixel> data;

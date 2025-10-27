@@ -3,7 +3,6 @@
 
 #include <math.h>
 #include <iostream>
-
 class Vector3D
 {
 public:

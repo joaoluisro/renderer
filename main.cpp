@@ -21,7 +21,7 @@ using namespace std;
 
 
 void benchmark(const char* filename, int width, int height, int threshold, string bvh_type)
-{  
+{
   BVHType type = BVHType::MIDPOINT;
   if(bvh_type == "median") type = BVHType::MEDIAN;
   if(bvh_type == "sah")    type = BVHType::SAH;
@@ -55,7 +55,7 @@ void benchmark(const char* filename, int width, int height, int threshold, strin
   light_pos = c_origin + Vector3D(0,3,0);
   lights.push_back(make_shared<Light>(light_pos.to_blender(), Color(1,1,1)));
  
-  const double fov = 30.0;
+  const double fov = 60.0;
   Camera camera(c_origin, c_viewpoint, fov, width, height);
   vector<shared_ptr<BaseObject>> faces;
   Scene main_scene(camera, scene_meshes, lights);
@@ -77,9 +77,6 @@ void benchmark(const char* filename, int width, int height, int threshold, strin
 
 int main(int argc, char *argv[])
 {
-  const char *f = argv[6];
-  auto s = Parse::scene_file(f);
-  return 0;
   if(argc < 6)
   {
     std::cerr << "Missing args." << std::endl;
@@ -89,12 +86,15 @@ int main(int argc, char *argv[])
   const char *filename = argv[1];
   if(!std::filesystem::exists(filename))
   {
-    std::cerr << ".obj file does not exist." << std::endl;
+    std::cerr << ".scene file does not exist." << std::endl;
   }
 
   int width = atoi(argv[2]);
   int height = atoi(argv[3]);
   auto leaf_threshold = atoi(argv[4]);
   std::string bvh_type = argv[5];
-  benchmark(filename, width, height,leaf_threshold,bvh_type);
+  float fov = 60.0f;
+  Scene *s = Parse::scene_file(filename, width, height, fov);
+  s->render("output.ppm",width,height);
 }
+

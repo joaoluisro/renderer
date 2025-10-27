@@ -4,6 +4,7 @@
 
 #include <vector>
 #include <memory>
+#include <filesystem>
 
 #include "geometry/vector3d.h"
 #include "geometry/triangle.h"
@@ -36,6 +37,7 @@ Material parse_material(const vector<tinyobj::material_t> &materials,
                      .index_of_ref=m.ior};
         return mat;
     }
+    // Fallback to default material
     Material mat{.ambient=Color(0,0,0),
                  .diffuse=Color(0,0,0),
                  .specular=Color(0,0,0),
@@ -46,12 +48,12 @@ Material parse_material(const vector<tinyobj::material_t> &materials,
     return mat;
 }
 
-vector<shared_ptr<BaseObject>> parse_faces(int &index_offset,
-                                          const tinyobj::shape_t &shape,
-                                          const vector<tinyobj::material_t> &materials,
-                                          const tinyobj::attrib_t& attrib)
+vector<shared_ptr<BaseObject>> parse_faces(const tinyobj::shape_t &shape,
+                                           const vector<tinyobj::material_t> &materials,
+                                           const tinyobj::attrib_t& attrib)
 {
     vector<shared_ptr<BaseObject>> faces;
+    size_t index_offset = 0;
 
     for (size_t f = 0; f < shape.mesh.num_face_vertices.size(); f++)
     {
@@ -73,15 +75,14 @@ vector<shared_ptr<BaseObject>> parse_faces(int &index_offset,
             double vy = attrib.vertices[3 * idx.vertex_index + 1];
             double vz = attrib.vertices[3 * idx.vertex_index + 2];
             t_vertices.push_back(Vector3D(vx, vy, vz));
-
             double nx = 0, ny = 0, nz = 0;
             if (idx.normal_index >= 0)
             {
-            nx = attrib.normals[3 * idx.normal_index + 0];
-            ny = attrib.normals[3 * idx.normal_index + 1];
-            nz = attrib.normals[3 * idx.normal_index + 2];
+                nx = attrib.normals[3 * idx.normal_index + 0];
+                ny = attrib.normals[3 * idx.normal_index + 1];
+                nz = attrib.normals[3 * idx.normal_index + 2];
             }
-            t_normals.push_back(Vector3D(nx, ny, nz));
+            t_normals.push_back(Vector3D(nx, ny, nz).normalized());
 
             // texture coordinates UNUSED
             // double tx = 0, ty = 0;
@@ -95,8 +96,9 @@ vector<shared_ptr<BaseObject>> parse_faces(int &index_offset,
             green = attrib.colors[3 * size_t(idx.vertex_index) + 1];
             blue = attrib.colors[3 * size_t(idx.vertex_index) + 2];
         }
-        int mat_id = shape.mesh.material_ids[0];
-        auto face_material = parse_material(materials, mat_id);
+        int material_id = shape.mesh.material_ids[f]; // material index
+        auto face_material = parse_material(materials, material_id);
+
         faces.push_back(make_shared<Triangle>(t_vertices[0],
                                               t_vertices[1],
                                               t_vertices[2],
@@ -105,7 +107,6 @@ vector<shared_ptr<BaseObject>> parse_faces(int &index_offset,
                                               t_normals[2],
                                               Color(red,green,blue),
                                               face_material));
-
         index_offset += fv;
     }
     return faces;
@@ -116,23 +117,33 @@ int parse_obj(const char *filename,
               int leaf_threshold,
               BVHType tree_type)
 {
-  tinyobj::attrib_t attrib;
-  vector<tinyobj::shape_t> shapes;
-  vector<tinyobj::material_t> materials;
+    tinyobj::ObjReaderConfig cfg;
+
+    std::filesystem::path p = filename;
+
+    cfg.mtl_search_path = p.parent_path();
+    cfg.triangulate = true;
+
+    tinyobj::ObjReader reader;
+    if (!reader.ParseFromFile(filename, cfg)) {
+        std::cerr << reader.Error() << std::endl;
+    }
+    if (!reader.Warning().empty()) std::cerr << reader.Warning() << std::endl;
+
+    const auto& materials = reader.GetMaterials();
+    const auto& shapes    = reader.GetShapes();
+    const auto& attrib    = reader.GetAttrib();
+
   string warn, err;
 
-  if(!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, filename))
-  {
-    cerr << "Failed to load/parse .obj file\n";
-    return 0;
-  }
-
-  int index_offset = 0;
   for(size_t s = 0; s < shapes.size(); s++)
   {
-    auto faces = parse_faces(index_offset, shapes[s], materials, attrib);
+    vector<shared_ptr<BaseObject>> faces;
+
+    faces = parse_faces(shapes[s], materials, attrib);
     mesh.push_back(make_shared<Mesh>(faces, false, false, leaf_threshold, tree_type));
   }
-
   return 0;
 }
+
+

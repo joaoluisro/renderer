@@ -10,7 +10,7 @@ class Sphere : public BaseObject{
     origin(o),radius(r), color(c){}
     ~Sphere();
 
-    double intersects(Ray &r) const override;
+    double intersects(Ray r) const override;
     Vector3D get_normal(Vector3D &at) const override;
     Color get_color() const override;
     Material material() override;

@@ -9,6 +9,7 @@ Mesh::Mesh(std::vector<shared_ptr<BaseObject>> faces,
   this->is_mirror = is_mirror;
   this->is_transparent = is_transparent;
   this->size = faces.size();
+  this->faces = faces;
   switch (treeType)
   {
   case MIDPOINT:
@@ -24,12 +25,12 @@ Mesh::Mesh(std::vector<shared_ptr<BaseObject>> faces,
     this->bbox = BvhBBox::buildMidpointBVH(faces,threshold,0);
     break;
   }
-  
 }
+
 Mesh::~Mesh()
 {
 }
-double Mesh::hit(shared_ptr<BaseObject> &closest, Ray &r)
+double Mesh::hit(shared_ptr<BaseObject> &closest, Ray r)
 {
   double t_global_min = 1e+9f;
   return bbox->hit(closest, r, t_global_min);

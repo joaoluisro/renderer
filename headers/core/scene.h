@@ -31,10 +31,11 @@ class Scene{
 
     void render(const char *filename, int width, int height);
     inline Color traceRay(Ray &r, int depth) const;
-    inline double hit(shared_ptr<BaseObject> &closest, Ray &r) const;
+    inline double hit(shared_ptr<BaseObject> &closest, Ray r) const;
     inline bool isShadowed( Vector3D &l,  Vector3D &p,  shared_ptr<BaseObject> &obj) const;
-    inline Color computePhong( Vector3D &p,  shared_ptr<BaseObject> obj) const;
-  
+    inline Color computePhong( Vector3D &p,  shared_ptr<BaseObject> obj, Vector3D &reflection, double &distance) const;
+    inline Color shade(Vector3D dir, shared_ptr<BaseObject> face, Vector3D p, double &distance) const;
+
 
     inline void traceRayHeatmap(Ray &r, vector<float> &radiance, vector<float> &hits) const;
     inline float computePhongHeatmap(Vector3D &p,  shared_ptr<BaseObject> obj) const;

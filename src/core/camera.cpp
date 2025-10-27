@@ -1,6 +1,7 @@
 #include <math.h>
 
 #include "core/camera.h"
+#include "geometry/ray.h"
 
 Camera::Camera(Vector3D &origin, 
                Vector3D &view_point, 
@@ -32,4 +33,10 @@ Vector3D Camera::pixelToWorldSpace(int i, int j) const
   double ndcX = (2*(i + 0.5)/width  - 1) * aspect * scale;
   double ndcY = (1 - 2*(j + 0.5)/height) * scale;
   return ((right*ndcX + up*ndcY) + front).normalized();
+}
+
+void Camera::zoom(double z)
+{
+    Ray r(origin, front);
+    this->origin = this->origin + r.at(z);
 }
