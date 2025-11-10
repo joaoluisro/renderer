@@ -10,10 +10,12 @@ class Light
 public:
   Vector3D position;
   Color color;
+  float intensity;
 public:
-  Light(Vector3D position, Color color) : 
-  position(position),color(color){};
-  ~Light(){};
+  Light(Vector3D position, Color color, float intensity);
+  ~Light();
+  Vector3D getDirection(const Vector3D& p);
+  float getIntensity(const Vector3D& p);
 };
 
 #endif

@@ -1,6 +1,6 @@
 #include "bvh/mesh.h"
 
-Mesh::Mesh(std::vector<shared_ptr<BaseObject>> faces, 
+Mesh::Mesh(std::vector<shared_ptr<Face>> faces, 
       bool is_mirror, 
       bool is_transparent,
       int threshold,
@@ -30,8 +30,8 @@ Mesh::Mesh(std::vector<shared_ptr<BaseObject>> faces,
 Mesh::~Mesh()
 {
 }
-double Mesh::hit(shared_ptr<BaseObject> &closest, Ray r)
+float Mesh::hit(shared_ptr<Face> &closest, Ray r)
 {
-  double t_global_min = 1e+9f;
+  float t_global_min = 1e+9f;
   return bbox->hit(closest, r, t_global_min);
 }

@@ -6,7 +6,7 @@
 
 #include "core/color.h"
 
-struct Pixel { double r, g, b; };
+struct Pixel { float r, g, b; };
 
 class FrameBuffer{
   public:

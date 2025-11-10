@@ -15,7 +15,7 @@ public:
 
     return true;
   }
-  Vector3D at(double t) const{ 
+  Vector3D at(float t) const{ 
     return origin + t*direction; 
   }
 };

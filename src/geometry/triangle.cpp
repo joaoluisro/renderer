@@ -18,16 +18,16 @@ Triangle::Triangle(
   this->v0 = v0;
   this->v1 = v1;
   this->v2 = v2;
-  if(fabs((n0 - n1).length()) < EPS)
-  {
-    this->n0 = (v0 - v1).cross(v0 - v2);
-  }
-  else
-  {
+  // if(fabs((n0 - n1).length()) < EPS)
+  // {
+  //   this->n0 = (v0 - v1).cross(v0 - v2);
+  // }
+  // else
+  // {
     this->n0 = n0;
     this->n1 = n1;
     this->n2 = n2;
-  }
+  // }
   this->color = color;
   this->mat = mat;
 }
@@ -36,22 +36,22 @@ Triangle::~Triangle()
 {
 }
 
-double Triangle::intersects(Ray r) const
+float Triangle::intersects(const Ray& r) const
 {
   Vector3D v0v1 = v1 - v0;
   Vector3D v0v2 = v2 - v0;
   Vector3D N = v0v1.cross(v0v2); // N
 
   // Check if the ray and plane are parallel
-  double n_dot_r = N.dot(r.direction);
+  float n_dot_r = N.dot(r.direction);
   if (fabs(n_dot_r) < EPS) // Almost 0
   {
       return -1;
   }
 
-  double d = -N.dot(v0);
+  float d = -N.dot(v0);
   
-  double t = -(N.dot(r.origin) + d) / n_dot_r;
+  float t = -(N.dot(r.origin) + d) / n_dot_r;
   
   // Check if the triangle is behind the ray
   if (t < 0)
@@ -91,7 +91,7 @@ Vector3D Triangle::centroid() const{
   return((v0 + v1 + v2)* (1.0/3.0));
 }
 
-Vector3D Triangle::get_normal(Vector3D &at) const {
+Vector3D Triangle::get_normal(const Vector3D& at) const {
   Vector3D  e0   = v1 - v0;
   Vector3D  e1   = v2 - v0;
   Vector3D  N    = e0.cross(e1);
@@ -99,7 +99,7 @@ Vector3D Triangle::get_normal(Vector3D &at) const {
   auto x0 = v1 - at;
   auto x1 = v2 - at;
   auto x2 = v0 - at;
-  double area2 = N.length();  
+  float area2 = N.length();
 
   auto w0 = x0.cross( v2 - at).dot(N) / (area2*area2);
   auto w1 = x1.cross( v0 - at).dot(N) / (area2*area2);
@@ -132,7 +132,7 @@ Vector3D Triangle::min() const {
   return Vector3D(min_x, min_y, min_z);
 }
 
-bool Triangle::isOutOfBounds(Vector3D &mx, Vector3D &mn) const
+bool Triangle::isOutOfBounds(const Vector3D& mx,const Vector3D& mn) const
 {
   auto v_min = min();
   if(v_min.x < mn.x ||v_min.y < mn.y ||v_min.z < mn.z ) return true; 

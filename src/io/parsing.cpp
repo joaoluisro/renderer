@@ -88,7 +88,7 @@ Scene* scene_file(const char *filename, const int width, const int height, const
         color.g = c_tmp.y;
         color.b = c_tmp.z;
 
-        return Light(pos.to_blender(), color);
+        return Light(pos.to_blender(), color, 100.0);
     };
 
     std::string line;
@@ -114,14 +114,16 @@ Scene* scene_file(const char *filename, const int width, const int height, const
             lights.push_back(make_shared<Light>(l));
         }
     }
+    // lights.erase(lights.begin());
+    // lights.pop_back();
     cout << "Rendering: " <<wavefront_filepath << "\n";
     cout << " Light info : ";
     for(auto &l : lights)
     {
         l->color.info();
+        cout << l->intensity;
     }
-    parse_obj(wavefront_filepath.c_str(), meshes, 16, BVHType::MIDPOINT);
-    camera->zoom(2.5);
+    parse_obj(wavefront_filepath.c_str(), meshes, 16, BVHType::SAH);
     Scene *s = new Scene(*camera, meshes, lights);
     int count = 0;
     for(auto m : meshes)

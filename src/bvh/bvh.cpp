@@ -2,11 +2,11 @@
 using namespace std;
 
 #define THRESHOLD 4
-#define EPSILON 1e-8
+#define EPSILON 1e-5
 
 namespace BvhBBox
 {
-Vector3D computeMax(vector<shared_ptr<BaseObject>> faces)
+Vector3D computeMax(vector<shared_ptr<Face>> faces)
 {
   auto x_max= -1e+9f;
   auto y_max= -1e+9f;
@@ -21,7 +21,7 @@ Vector3D computeMax(vector<shared_ptr<BaseObject>> faces)
   return Vector3D(x_max, y_max, z_max);
 }
 
-Vector3D computeMin(vector<shared_ptr<BaseObject>> faces)
+Vector3D computeMin(vector<shared_ptr<Face>> faces)
 {
   auto x_min= 1e+9f;
   auto y_min= 1e+9f;
@@ -36,9 +36,9 @@ Vector3D computeMin(vector<shared_ptr<BaseObject>> faces)
   return Vector3D(x_min, y_min, z_min);
 }
 
-vector<pair<double,shared_ptr<BaseObject>>> buildCentroidList(vector<shared_ptr<BaseObject>> faces, int axis)
+vector<pair<float,shared_ptr<Face>>> buildCentroidList(vector<shared_ptr<Face>> faces, int axis)
 {
-  vector<pair<double,shared_ptr<BaseObject>>> centroid_list;
+  vector<pair<float,shared_ptr<Face>>> centroid_list;
   for(auto &face : faces)
   {
     centroid_list.push_back(make_pair(face->centroid()[axis],face));
@@ -46,7 +46,7 @@ vector<pair<double,shared_ptr<BaseObject>>> buildCentroidList(vector<shared_ptr<
   return centroid_list;
 }
 
-shared_ptr<BVH> buildMedianBVH(vector<shared_ptr<BaseObject>> &faces, int threshold) {
+shared_ptr<BVH> buildMedianBVH(vector<shared_ptr<Face>> &faces, int threshold) {
   // compute min/max bounds from faces
   Vector3D mn = computeMin(faces);
   Vector3D mx = computeMax(faces);
@@ -80,8 +80,8 @@ shared_ptr<BVH> buildMedianBVH(vector<shared_ptr<BaseObject>> &faces, int thresh
   size_t n    = centroids.size();
   size_t half = n / 2;
   
-  vector<shared_ptr<BaseObject>> leftFaces;
-  vector<shared_ptr<BaseObject>> rightFaces;
+  vector<shared_ptr<Face>> leftFaces;
+  vector<shared_ptr<Face>> rightFaces;
   leftFaces.reserve(half);
   rightFaces.reserve(centroids.size() - half);
 
@@ -99,7 +99,7 @@ shared_ptr<BVH> buildMedianBVH(vector<shared_ptr<BaseObject>> &faces, int thresh
   return make_shared<BVH>(leftNode, rightNode, mn, mx, false, faces);
 }
  
-shared_ptr<BVH> buildMidpointBVH(vector<shared_ptr<BaseObject>>& faces, int threshold, int axis)
+shared_ptr<BVH> buildMidpointBVH(vector<shared_ptr<Face>>& faces, int threshold, int axis)
 {
   // compute min/max bounds from faces
   Vector3D mn = computeMin(faces);
@@ -109,7 +109,7 @@ shared_ptr<BVH> buildMidpointBVH(vector<shared_ptr<BaseObject>>& faces, int thre
     return make_shared<BVH>(nullptr,nullptr,mn,mx,true,faces);
   }
   auto mid_point = (mn + mx) * 0.5;
-  vector<shared_ptr<BaseObject>> left,right;
+  vector<shared_ptr<Face>> left,right;
 
   for(auto &face : faces)
   {
@@ -138,7 +138,7 @@ shared_ptr<BVH> buildMidpointBVH(vector<shared_ptr<BaseObject>>& faces, int thre
 
 }
 
-shared_ptr<BVH> buildSAHBVH(vector<shared_ptr<BaseObject>>& faces, int threshold)
+shared_ptr<BVH> buildSAHBVH(vector<shared_ptr<Face>>& faces, int threshold)
 {
 
   auto max = computeMax(faces);
@@ -148,17 +148,17 @@ shared_ptr<BVH> buildSAHBVH(vector<shared_ptr<BaseObject>>& faces, int threshold
     return make_shared<BVH>(nullptr, nullptr, min, max, true, faces);
   }
   int best_axis = -1;
-  double best_length = -1;
-  double best_cost = 1e+6f;
+  float best_length = -1;
+  float best_cost = 1e+6f;
 
-  double extent[3] = {max[0] - min[0], max[1] - min[1],  max[2] - min[2]};
-  double total_area = 2*(extent[0]*extent[1]) + 2*(extent[0]*extent[2]) + 2*(extent[1]*extent[2]);
+  float extent[3] = {max[0] - min[0], max[1] - min[1],  max[2] - min[2]};
+  float total_area = 2*(extent[0]*extent[1]) + 2*(extent[0]*extent[2]) + 2*(extent[1]*extent[2]);
 
-  double traversal_time = 1.0f;
+  float traversal_time = 1.0f;
 
   for(int i = 0; i < 3; i++)
   {
-    double interval = extent[i]/threshold;
+    float interval = extent[i]/threshold;
 
     for(int j = 1; j < threshold; j++)
     {
@@ -178,10 +178,10 @@ shared_ptr<BVH> buildSAHBVH(vector<shared_ptr<BaseObject>>& faces, int threshold
 
       int axis1 = (i + 1)%3;
       int axis2 = (i + 2)%3;
-      double left_axis0_length = (interval * j);
-      double right_axis0_length = extent[i] - left_axis0_length;
+      float left_axis0_length = (interval * j);
+      float right_axis0_length = extent[i] - left_axis0_length;
 
-      double left_area  = 2*(left_axis0_length * extent[axis1]) + 2*(left_axis0_length * extent[axis2]) + 2*(extent[axis2] * extent[axis1]);
+      float left_area  = 2*(left_axis0_length * extent[axis1]) + 2*(left_axis0_length * extent[axis2]) + 2*(extent[axis2] * extent[axis1]);
       auto right_area = 2*(right_axis0_length * extent[axis1]) + 2*(right_axis0_length * extent[axis2]) + 2*(extent[axis2] * extent[axis1]);
 
       auto cost = traversal_time + (left_area/total_area)*(left_count) + (right_area/total_area)*(right_count);
@@ -194,7 +194,7 @@ shared_ptr<BVH> buildSAHBVH(vector<shared_ptr<BaseObject>>& faces, int threshold
     }
   }
   
-  vector<shared_ptr<BaseObject>> left,right;
+  vector<shared_ptr<Face>> left,right;
   for(auto &face : faces)
   {
     auto centroid = face->centroid();
@@ -226,26 +226,26 @@ shared_ptr<BVH> buildSAHBVH(vector<shared_ptr<BaseObject>>& faces, int threshold
 inline bool slabAABB(const Ray& r,
                      const Vector3D& bmin,
                      const Vector3D& bmax,
-                     double& tNear,
-                     double& tFar)
+                     float& tNear,
+                     float& tFar)
 {
   tNear = 0.0;
-  tFar  = std::numeric_limits<double>::infinity();
+  tFar  = std::numeric_limits<float>::infinity();
 
   for (int i = 0; i < 3; ++i) 
   {
-    double o = r.origin[i];
-    double d = r.direction[i];
+    float o = r.origin[i];
+    float d = r.direction[i];
 
-    if (fabs(d) < 1e-4)
+    if (fabs(d) < EPSILON)
     {
       if (o < bmin[i] || o > bmax[i]) return false;
       continue;
     }
 
-    double invD = 1.0 / d;
-    double t0   = (bmin[i] - o) * invD;
-    double t1   = (bmax[i] - o) * invD;
+    float invD = 1.0 / d;
+    float t0   = (bmin[i] - o) * invD;
+    float t1   = (bmax[i] - o) * invD;
     if (invD < 0.0) std::swap(t0, t1);
 
     tNear = std::max(tNear, t0);
@@ -256,21 +256,21 @@ inline bool slabAABB(const Ray& r,
   return tFar >= 0.0;
 }
 
-double BVH::hit(std::shared_ptr<BaseObject> &closest, const Ray &r, double bestT)
+float BVH::hit(std::shared_ptr<Face> &closest, const Ray &r, float bestT)
 {
 
   // test this node's bounding box
-  double tNear, tFar;
+  float tNear, tFar;
   if (!slabAABB(r, min, max, tNear, tFar) || tNear > bestT)
       return -1.0;  // No hit with this node
 
   // if leaf node, test all faces
   if (is_leaf) {
-      double closestT = bestT;
-      std::shared_ptr<BaseObject> closestObj = nullptr;
+      float closestT = bestT;
+      std::shared_ptr<Face> closestObj = nullptr;
 
       for (auto& face : faces) {
-          double t = face->intersects(r);
+          float t = face->intersects(r);
 
           if (t > EPSILON && t < closestT) {
               closestT = t;
@@ -285,18 +285,18 @@ double BVH::hit(std::shared_ptr<BaseObject> &closest, const Ray &r, double bestT
   }
   
   // if not a leaf, traverse children (closest-first)
-  double tNearL = std::numeric_limits<double>::infinity();
-  double tFarL  = std::numeric_limits<double>::infinity();
-  double tNearR = std::numeric_limits<double>::infinity();
-  double tFarR  = std::numeric_limits<double>::infinity();
+  float tNearL = std::numeric_limits<float>::infinity();
+  float tFarL  = std::numeric_limits<float>::infinity();
+  float tNearR = std::numeric_limits<float>::infinity();
+  float tFarR  = std::numeric_limits<float>::infinity();
 
   bool hitLeft  = left  && slabAABB(r, left->min, left->max, tNearL, tFarL);
   bool hitRight = right && slabAABB(r, right->min, right->max, tNearR, tFarR);
 
   if(!hitLeft && !hitRight) return -1.0;
 
-  std::shared_ptr<BaseObject> leftClosest, rightClosest;
-  double leftHit  = -1.0, rightHit = -1.0;
+  std::shared_ptr<Face> leftClosest, rightClosest;
+  float leftHit  = -1.0, rightHit = -1.0;
 
   // visit nearer child first
   if(hitLeft && hitRight)

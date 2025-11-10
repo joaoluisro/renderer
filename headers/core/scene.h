@@ -9,13 +9,12 @@
 #include "core/color.h"
 #include "core/light.h"
 
-#include "geometry/baseObject.h"
+#include "geometry/face.h"
 
 #include "bvh/mesh.h"
 
 #include "io/framebuffer.h"
 
-#define PI 3.1419
 
 using namespace std;
 
@@ -29,18 +28,16 @@ class Scene{
     }
     ~Scene();
 
-    void render(const char *filename, int width, int height);
-    inline Color traceRay(Ray &r, int depth) const;
-    inline double hit(shared_ptr<BaseObject> &closest, Ray r) const;
-    inline bool isShadowed( Vector3D &l,  Vector3D &p,  shared_ptr<BaseObject> &obj) const;
-    inline Color computePhong( Vector3D &p,  shared_ptr<BaseObject> obj, Vector3D &reflection, double &distance) const;
-    inline Color shade(Vector3D dir, shared_ptr<BaseObject> face, Vector3D p, double &distance) const;
+    void render(const char *filename, int width, int height, int n_sample);
+    inline Color traceRay(const Ray &r, int depth) const;
+    inline Color integrate(const Ray &r, int n_samples) const;
+    Color traceSampledRay(const Ray &r, const Vector3D &p, const Vector3D &n, const shared_ptr<Face> f, int &hit_count) const;
 
-
-    inline void traceRayHeatmap(Ray &r, vector<float> &radiance, vector<float> &hits) const;
-    inline float computePhongHeatmap(Vector3D &p,  shared_ptr<BaseObject> obj) const;
-    void render_heatmap(const char *filename, int width, int height, int &box_tests, int &leaf_tests, int &n_test_max);
-  
+    inline float intersects(shared_ptr<Face> &closest,const Ray& r) const;
+    inline bool isOccluded(const Vector3D &l, const Vector3D &p, shared_ptr<Face> obj) const;
+    inline Color shadeOpaque(const Vector3D& dir, const shared_ptr<Face> face, const Vector3D& p) const;
+    inline Color shadeTransparent(const Vector3D& dir, const shared_ptr<Face> face, const Vector3D& p) const;
+    inline Color getFresnel(float &trn, float &ref) const;
   private:
     Camera camera;
     vector<shared_ptr<Mesh>> scene_meshes;

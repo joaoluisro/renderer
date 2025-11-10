@@ -6,11 +6,11 @@
 class Vector3D
 {
 public:
-  double x,y,z;
+  float x,y,z;
 
 public:
   Vector3D();
-  Vector3D(double x, double y, double z);
+  Vector3D(float x, float y, float z);
 
   ~Vector3D();
   
@@ -20,20 +20,21 @@ public:
 
   Vector3D operator-(Vector3D const& other) const;
   
-  double operator[](int axis) const;
+  float operator[](int axis) const;
 
-  double dot(Vector3D const& other) const;
+  float dot(Vector3D const& other) const;
   
   Vector3D cross(Vector3D const& other) const;
   
-  Vector3D operator*(double lambda) const;
-  Vector3D operator+(double lambda) const;
+  Vector3D operator*(float lambda) const;
+  Vector3D operator+(float lambda) const;
 
-  friend Vector3D operator*(double s, const Vector3D& v);
+  friend Vector3D operator*(float s, const Vector3D& v);
 
-  friend Vector3D operator/(double s, const Vector3D& v);
+  friend Vector3D operator/(float s, const Vector3D& v);
+  Vector3D reflect(const Vector3D &normal) const;
 
-  double length() const;
+  float length() const;
   
   Vector3D normalized() const;
   void normalize();

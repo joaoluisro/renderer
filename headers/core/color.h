@@ -4,19 +4,19 @@ class Color
 {
   public:
     Color();
-    Color(double r, double g, double b); 
+    Color(float r, float g, float b);
     ~Color();
     Color operator+(const Color& other) const;
     Color operator-(const Color& other) const;
     Color operator*(Color& other);
 
-    Color& operator*=(double lambda);
-    Color operator*(double lambda) const;
+    Color& operator*=(float lambda);
+    Color operator*(float lambda) const;
 
     Color& operator+=(const Color &other);
     void info();
   public:
-    double r,g,b;
+    float r,g,b;
 };
 
 #endif
