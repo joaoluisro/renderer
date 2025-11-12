@@ -11,8 +11,7 @@ Triangle::Triangle(
   Vector3D n0,
   Vector3D n1,
   Vector3D n2,
-  Color color,
-  Material mat
+  Color color
 )
 {
   this->v0 = v0;
@@ -29,7 +28,6 @@ Triangle::Triangle(
     this->n2 = n2;
   // }
   this->color = color;
-  this->mat = mat;
 }
 
 Triangle::~Triangle()
@@ -110,11 +108,6 @@ Vector3D Triangle::get_normal(const Vector3D& at) const {
   return normal;
 }
 
-Material Triangle::material()
-{
-  return mat;
-}
-
 Vector3D Triangle::max() const {
 
   auto max_x = std::max({v0.x,v1.x,v2.x});
@@ -139,4 +132,20 @@ bool Triangle::isOutOfBounds(const Vector3D& mx,const Vector3D& mn) const
   auto v_max = max();
   if(v_max.x > mx.x ||v_max.y > mx.y ||v_max.z > mx.z ) return true; 
   return false; 
+}
+
+Vector3D Triangle::generateUniform(float e1, float e2) const
+{
+    float sqrte1 = sqrt(e1);
+    float u = 1 - sqrte1;
+    float v = sqrte1 * (1 - e2);
+    float w = sqrte1 * e2;
+    return (v0 * u) + (v1 * v) + (v2 * w);
+}
+
+float Triangle::getArea() const
+{
+    Vector3D v0v1 = v1 - v0;
+    Vector3D v0v2 = v2 - v0;
+    return (v0v1.length() * v0v2.length())/2;
 }

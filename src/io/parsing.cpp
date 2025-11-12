@@ -87,8 +87,8 @@ Scene* scene_file(const char *filename, const int width, const int height, const
         color.r = c_tmp.x;
         color.g = c_tmp.y;
         color.b = c_tmp.z;
-
-        return Light(pos.to_blender(), color, 100.0);
+        return Vector3D(0,0,0);
+        // return Light(pos.to_blender(), color, 100.0);
     };
 
     std::string line;
@@ -110,38 +110,40 @@ Scene* scene_file(const char *filename, const int width, const int height, const
         }
         else if(line == LIGHTING_SECTION_SIGNATURE)
         {
-            Light l = parse_lighting();
-            lights.push_back(make_shared<Light>(l));
+            // Light l = parse_lighting();
+            // lights.push_back(make_shared<Light>(l));
         }
     }
-    // lights.erase(lights.begin());
-    // lights.pop_back();
-    cout << "Rendering: " <<wavefront_filepath << "\n";
-    cout << " Light info : ";
-    for(auto &l : lights)
-    {
-        l->color.info();
-        cout << l->intensity;
-    }
+    cout << "Rendering: " << wavefront_filepath << "\n";
+
     parse_obj(wavefront_filepath.c_str(), meshes, 16, BVHType::SAH);
-    Scene *s = new Scene(*camera, meshes, lights);
     int count = 0;
     for(auto m : meshes)
     {
+        if(m->material.is_lightsource)
+        {
+            for(auto face : m->faces)
+            {
+                auto l = make_shared<Light>(Light(Vector3D(0,0,0), Color(1,1,1), 100.0f, face));
+                lights.push_back(l);
+                cout << l->intensity << "\n";
+            }
+        }
         std::cout<<"Mesh " << count << " \n";
         std::cout << "Color : ";
         m->faces[0]->get_color().info();
         std::cout << "Ambient : ";
-        m->faces[0]->material().ambient.info();
+        m->material.ambient.info();
 
         std::cout << "Diffuse : ";
-        m->faces[0]->material().diffuse.info();
+        m->material.diffuse.info();
 
         std::cout << "Specular :";
-        m->faces[0]->material().specular.info();
+        m->material.specular.info();
         std::cout<<"------------------------\n";
         count++;
     }
+    Scene *s = new Scene(*camera, meshes, lights);
     return s;
 }
 }

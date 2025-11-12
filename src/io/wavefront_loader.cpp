@@ -53,7 +53,8 @@ Material parse_material(const vector<tinyobj::material_t> &materials,
                      .transparency=m.dissolve,
                      .index_of_ref=m.ior,
                      .illum=illum,
-                     .isTransparent=m.illum == 2};
+                     .is_transparent=m.illum == 2,
+                     .is_lightsource=m.illum == 3};
         return mat;
     }
     // Fallback to default material
@@ -65,7 +66,8 @@ Material parse_material(const vector<tinyobj::material_t> &materials,
                  .transparency=0.0f,
                  .index_of_ref=0.0f,
                  .illum= IllumType::OPAQUE,
-                 .isTransparent=false};
+                 .is_transparent=false,
+                 .is_lightsource=false};
     return mat;
 }
 
@@ -117,8 +119,6 @@ vector<shared_ptr<Face>> parse_faces(const tinyobj::shape_t &shape,
             green = attrib.colors[3 * size_t(idx.vertex_index) + 1];
             blue = attrib.colors[3 * size_t(idx.vertex_index) + 2];
         }
-        int material_id = shape.mesh.material_ids[f]; // material index
-        auto face_material = parse_material(materials, material_id);
 
         faces.push_back(make_shared<Triangle>(t_vertices[0],
                                               t_vertices[1],
@@ -126,8 +126,7 @@ vector<shared_ptr<Face>> parse_faces(const tinyobj::shape_t &shape,
                                               t_normals[0],
                                               t_normals[1],
                                               t_normals[2],
-                                              Color(red,green,blue),
-                                              face_material));
+                                              Color(red,green,blue)));
         index_offset += fv;
     }
     return faces;
@@ -162,7 +161,11 @@ int parse_obj(const char *filename,
     vector<shared_ptr<Face>> faces;
 
     faces = parse_faces(shapes[s], materials, attrib);
-    mesh.push_back(make_shared<Mesh>(faces, false, false, leaf_threshold, tree_type));
+    int material_id = shapes[s].mesh.material_ids[0]; // material index
+    auto material = parse_material(materials, material_id);
+
+    mesh.push_back(make_shared<Mesh>(faces, false, false, leaf_threshold, tree_type, material));
+
   }
   return 0;
 }

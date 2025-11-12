@@ -1,6 +1,6 @@
 #include "core/scene.h"
 
-#define MAX_BOUNCE 3
+#define MAX_BOUNCE 2
 #define MAX_VAL 1e+9
 #define BACKGROUND_COLOR Color(1,1,1)
 #define NULL_RADIANCE Color(0,0,0)
@@ -8,19 +8,30 @@
 #define REFLECT false
 #include <algorithm>
 
-#include <random>
 #include <cmath>
+
+Scene::Scene(Camera &c,
+             vector<shared_ptr<Mesh>> &m,
+             vector<shared_ptr<Light>> &l) : camera(c), meshes(m), lights(l)
+{
+    std::random_device rd;  // Will be used to obtain a seed for the random number engine
+    std::mt19937 gen(rd()); // Standard mersenne_twister_engine seeded with rd()
+    std::uniform_real_distribution<> dis(0.0, 1.0);
+    this->gen = gen;
+    this->dis = dis;
+}
 
 Scene::~Scene()
 {
 }
 
 inline float Scene::intersects(shared_ptr<Face> &closest,
-                                const Ray& r) const
+                               Material &m,
+                               const Ray& r) const
 {
     float min_dist = 1e+9;
     shared_ptr<Face> closest_found = nullptr;
-    for(const auto &mesh : scene_meshes)
+    for(const auto &mesh : meshes)
     {
         shared_ptr<Face> closest_buffer = nullptr;
         auto t_found = mesh->hit(closest_buffer, r);
@@ -28,6 +39,7 @@ inline float Scene::intersects(shared_ptr<Face> &closest,
         {
             min_dist = t_found;
             closest_found = closest_buffer;
+            m = mesh->material;
         }
     }
     if(closest_found)
@@ -38,64 +50,7 @@ inline float Scene::intersects(shared_ptr<Face> &closest,
     return -1;
 }
 
-inline bool Scene::isOccluded(const Vector3D& light_origin,
-                              const Vector3D& p,
-                              const shared_ptr<Face> face) const
-{
-    auto light_ray_direction = (p - light_origin).normalized();
-
-    Ray shadow_ray(light_origin,light_ray_direction);
-
-    shared_ptr<Face> other_face;
-
-    auto t = intersects(other_face, shadow_ray);
-
-    if(t > 0 && other_face != face && t < (p - light_origin).length() && !other_face->material().isTransparent)
-    {
-        return true;
-    }
-    return false;
-}
-
-Color Scene::shadeOpaque(const Vector3D& dir,
-                          const shared_ptr<Face> face,
-                          const Vector3D& p) const
-{
-    Color L(0,0,0);
-    Color fr(1/M_PI,1/M_PI,1/M_PI);
-    Vector3D N = face->get_normal(p).normalized();
-    if(N.dot(dir) < 0.0)
-    {
-        N = N * -1;
-    }
-    for(const auto &light : scene_lights)
-    {
-        Vector3D toL = light->position - p;
-        float r2 = toL.dot(toL);
-
-        float r = sqrt(r2);
-        Vector3D wi = toL * (1/r);
-
-
-        float ndotl = N.dot(wi);
-        if(ndotl <= 0.0) continue;
-
-        // if(isOccluded(light->position, p + (N * EPSILON), face)) continue;
-
-
-        float Li = light->intensity/r2;
-        L +=  face->material().diffuse * fr * Li * ndotl;
-        // Diffuse component
-        // diffuse += face->material().diffuse * ndotl * light->getIntensity(p) * light->color;
-        // Specular component
-        auto reflection_vector = ((2 * ndotl) * N - wi).normalized();
-
-        // float specAngle = max(reflection_vector.dot(dir), 0.0);
-        // L += (face->material().specular * pow(specAngle, face->material().spec_exp)) * Li;
-    }
-    return L;
-}
-
+/*
 Vector3D refractDirection(const Vector3D &dir, const Vector3D &n, const float &ior)
 {
     float eta_interface = ior;
@@ -172,7 +127,7 @@ Color Scene::traceSampledRay(const Ray &r, const Vector3D &p,  const Vector3D &n
     L *= 10;
     return L;
 }
-
+*/
 Vector3D generateUniformSample(float eta1, float eta2)
 {
     float theta, phi;
@@ -196,17 +151,130 @@ Vector3D generateCosineWeightedSample(const float eta1, const float eta2)
     return Vector3D(x,y,z);
 }
 
-inline Color Scene::integrate(const Ray &r, int n_samples) const
+Color Scene::integrateNEE(const Ray &r, int n_samples, int depth)
 {
+    /* reached max recursion depth, return no radiance */
+    if(depth > MAX_BOUNCE) return NULL_RADIANCE;
+
+    bool is_primary_ray = depth == 0;
+
+    shared_ptr<Face> hit = nullptr;
+    Material hit_material;
+    float t = intersects(hit, hit_material, r);
+
+    /* ray doesnt hit anything, no radiance */
+    if(t < EPSILON) return NULL_RADIANCE;
+
+    /* primary ray hits light source */
+    if(hit_material.illum == AREA_LIGHT && is_primary_ray) return Color(1,1,1) * 10.0f;
+
+    Vector3D p = r.at(t);
+    Vector3D n = hit->get_normal(p).normalized();
+
+    /* flip normal when primary ray so it always faces the camera */
+    if(is_primary_ray)
+    {
+        if(r.direction.dot(n) > 0.0f) n = n * -1.0f;
+    }
+    Color L(0,0,0);
+
+    // /* Account for direct lighting */
+    Color L_direct(0,0,0);
+    for(auto &l : lights)
+    {
+        for(int i = 0; i < n_samples; i++)
+        {
+            float eta1 = this->dis(this->gen);
+            float eta2 = this->dis(this->gen);
+            auto sample_point = l->geometry->generateUniform(eta1, eta2);
+            float area = l->geometry->getArea();
+            Vector3D n_light = l->geometry->get_normal(sample_point).normalized();
+            n_light = n_light * -1.0f;
+            Vector3D w = (p - sample_point);
+            float dist = max(1.0f,w.length());
+            w.normalize();
+
+            float cos_x = n.dot(w * -1.0f);    // cos between face normal and ray from light source
+            float cos_y = n_light.dot(w);   // cos between light normal and ray from light source
+
+            shared_ptr<Face> hit_face;
+            Ray r_visible(sample_point + EPSILON * n_light, w);
+            Material m;
+            float t_from_face = intersects(hit_face, m, r_visible);
+            if(hit_face == hit)
+            {
+                float p_w = (1.0f/area)*(dist*dist/cos_y);
+                L_direct += l->color * hit_material.diffuse * cos_x * (1.0f/p_w) * 15.0f * 0.5;
+            }
+        }
+    }
+
+    /* Account for indirect, only consider opaque surfaces */
+    Color L_indirect(0,0,0);
+    for(int i = 0; i < n_samples; i++)
+    {
+        float eta1 = this->dis(this->gen);
+        float eta2 = this->dis(this->gen);
+
+        // Vector3D v = generateUniformSample(eta1, eta2);
+        Vector3D sample_dir = generateCosineWeightedSample(eta1, eta2);
+
+        float vdotn = sample_dir.dot(n);
+        /* generated ray is facing the wrong direction, flip it. */
+        if(vdotn < EPSILON)
+        {
+            sample_dir = sample_dir * -1.0f;
+            vdotn = -vdotn;
+        }
+
+        float sin_theta = sqrt(1.0f - (vdotn*vdotn));
+        float pdf_factor = (sin_theta * vdotn)/(M_PI);
+
+        Vector3D sample_origin = p + (EPSILON * n);
+        Ray sample_ray(sample_origin, sample_dir);
+
+        shared_ptr<Face> sample_hit = nullptr;
+        Material sample_material;
+        float t_hit = intersects(sample_hit,sample_material, sample_ray);
+
+        if(t_hit > EPSILON)
+        {
+            float dist = (p - r.at(t_hit)).length();
+            float falloff = std::min(1.0f, 1.0f/(dist * dist));
+            if(sample_material.illum == AREA_LIGHT)
+            {
+                auto Le = hit_material.diffuse;
+                L_indirect += Le * falloff * vdotn * (1.0f/pdf_factor) * 15.0f * 0.5;
+            }
+            else
+            {
+                Ray r_reflected(sample_origin, sample_dir * -1);
+                // auto reflect_dir = n.reflect(r.direction);
+                // float rdotn = max(0.0f, reflect_dir.dot(sample_dir));
+                L_indirect += integrateNEE(r_reflected, n_samples, depth + 1) * vdotn * (1.0f/pdf_factor);
+            }
+        }
+    }
+    L = L_direct;
+    return L * (1.0f/(2.0f * n_samples));
+}
+
+/*
+inline Color Scene::integrate(const Ray &r, int n_samples, int depth) const
+{
+
+    if(depth > MAX_BOUNCE) return NULL_RADIANCE;
 
     shared_ptr<Face> closest_face = nullptr;
     float t = intersects(closest_face, r);
 
     if(t < EPSILON) return BACKGROUND_COLOR;
+
     Vector3D intersection_point = r.at(t);
     Vector3D n = closest_face->get_normal(intersection_point).normalized();
 
-    if(closest_face->material().illum == AREA_LIGHT)
+
+    if(closest_face->material().illum == AREA_LIGHT && depth == 0)
     {
         auto dist = (r.origin - r.at(t)).length();
         return Color(1,1,1) * 5.0f;
@@ -219,7 +287,7 @@ inline Color Scene::integrate(const Ray &r, int n_samples) const
     // generate even samples on the hemisphere, only account for opaque surfaces
     // #pragma omp parallel for reduction(+:L)
     Color L(0,0,0);
-
+    int sample_count = n_samples/(pow(2,depth));
     for(int i = 0; i < n_samples; i++)
     {
         float eta1 = dis(gen);
@@ -246,7 +314,7 @@ inline Color Scene::integrate(const Ray &r, int n_samples) const
         shared_ptr<Face> hit = nullptr;
         float t_hit = intersects(hit, r_sample);
 
-        if(t_hit > EPSILON && hit->material().illum == AREA_LIGHT)
+        if(t_hit > EPSILON)
         {
             float dist = (hit->get_normal(r.at(t_hit)) - n).length();
             float falloff = 1.0f/(dist*dist);
@@ -255,11 +323,19 @@ inline Color Scene::integrate(const Ray &r, int n_samples) const
                 auto Le = hit->material().diffuse * 10;
                 L += closest_face->material().diffuse * falloff * Le * vdotn * (1.0f/den);
             }
+            else
+            {
+                Ray r_reflected(sample_origin, v * -1);
+                L += integrate(r_reflected, n_samples, depth + 1) * vdotn * (1.0f/den);
+            }
         }
     }
     return L * (1.0f/n_samples);
 }
 
+*/
+
+/*
 inline Color Scene::traceRay(const Ray &r,
                              int depth) const
 {
@@ -330,7 +406,7 @@ inline Color Scene::traceRay(const Ray &r,
 
     return L;
 }
-
+*/
 void Scene::render(const char *filename,
                    int width,
                    int height,
@@ -349,8 +425,7 @@ void Scene::render(const char *filename,
       
       Ray r(camera.origin, shooting_dir);
 
-      // auto final_color = traceRay(r, MAX_BOUNCE);
-      auto final_color = integrate(r,n_sample);
+      auto final_color = integrateNEE(r, n_sample, 0);
       frame_buffer.set(i,j,final_color);
     }
   }

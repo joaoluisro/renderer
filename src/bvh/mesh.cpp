@@ -4,7 +4,8 @@ Mesh::Mesh(std::vector<shared_ptr<Face>> faces,
       bool is_mirror, 
       bool is_transparent,
       int threshold,
-      BVHType treeType)
+      BVHType treeType,
+      Material m)
 {
   this->is_mirror = is_mirror;
   this->is_transparent = is_transparent;
@@ -25,6 +26,7 @@ Mesh::Mesh(std::vector<shared_ptr<Face>> faces,
     this->bbox = BvhBBox::buildMidpointBVH(faces,threshold,0);
     break;
   }
+  this->material = m;
 }
 
 Mesh::~Mesh()

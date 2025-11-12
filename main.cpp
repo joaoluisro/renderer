@@ -9,7 +9,7 @@ using namespace std;
 
 int main(int argc, char *argv[])
 {
-  if(argc < 6)
+  if(argc < 5)
   {
     std::cerr << "Missing args." << std::endl;
     return 1;

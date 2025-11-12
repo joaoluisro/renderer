@@ -40,11 +40,6 @@ Color Sphere::get_color() const
   return color;
 }
 
-Material Sphere::material()
-{
-  return mat;
-}
-
 Vector3D Sphere::centroid() const
 {
   return this->origin;
@@ -61,4 +56,14 @@ Vector3D Sphere::min() const
 bool Sphere::isOutOfBounds(const Vector3D& mx, const Vector3D& mn) const
 {
   return false; 
+}
+
+Vector3D Sphere::generateUniform(float e1, float e2) const
+{
+    return Vector3D(0,0,0);
+}
+
+float Sphere::getArea() const
+{
+    return 0.0f;
 }
