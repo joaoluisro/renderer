@@ -10,17 +10,17 @@
 class Camera
 {
   public:
-    Camera(Vector3D &origin, Vector3D &view_point, double fov, int height, int width);
+    Camera(Vector3D &origin, Vector3D &view_point, float fov, int height, int width);
     ~Camera();
     Vector3D pixelToWorldSpace(int i, int j) const;
-    void zoom(double z);
+    void zoom(float z);
   public:
     Vector3D origin;
     Vector3D view_point;
     Vector3D front,up,right;
-    double fov;
+    float fov;
     int height, width;
-    double aspect, scale;
+    float aspect, scale;
 };
 
 #endif

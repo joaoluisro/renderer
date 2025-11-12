@@ -4,33 +4,33 @@ Sphere::~Sphere()
 {
 }
 
-double Sphere::intersects(Ray r) const
+float Sphere::intersects(const Ray& r) const
 {
   // Vector from sphere this->origin to r origin
   Vector3D L = r.origin - this->origin;
 
   // Quadratic coefficients A t^2 + B t + C = 0
-  double A = r.direction.dot(r.direction);
-  double B = 2.0f * L.dot(r.direction);
-  double C = L.dot(L) - radius*radius;
+  float A = r.direction.dot(r.direction);
+  float B = 2.0f * L.dot(r.direction);
+  float C = L.dot(L) - radius*radius;
 
   // Discriminant
-  double disc = B*B - 4.0f*A*C;
+  float disc = B*B - 4.0f*A*C;
   if (disc < 0.0f) {
       // no real roots, no intersection
       return -1;
   }
 
   // Compute the two intersection distances along the r
-  double sqrt_disc = std::sqrt(disc);
-  double inv2A   = 0.5f / A;
-  double t0 = (-B - sqrt_disc) * inv2A;
-  double t1 = (-B + sqrt_disc) * inv2A;
+  float sqrt_disc = std::sqrt(disc);
+  float inv2A   = 0.5f / A;
+  float t0 = (-B - sqrt_disc) * inv2A;
+  float t1 = (-B + sqrt_disc) * inv2A;
   // If either t0 or t1 is >= 0, the sphere is hit in front of the r origin
   return(t0);
 }
 
-Vector3D Sphere::get_normal(Vector3D &at) const
+Vector3D Sphere::get_normal(const Vector3D& at) const
 {
   return Vector3D(at - origin) * (1/radius);
 }
@@ -38,11 +38,6 @@ Vector3D Sphere::get_normal(Vector3D &at) const
 Color Sphere::get_color() const
 {
   return color;
-}
-
-Material Sphere::material()
-{
-  return mat;
 }
 
 Vector3D Sphere::centroid() const
@@ -58,7 +53,17 @@ Vector3D Sphere::min() const
   return this->origin + (-radius);
 }
 
-bool Sphere::isOutOfBounds(Vector3D &mx, Vector3D &mn) const
+bool Sphere::isOutOfBounds(const Vector3D& mx, const Vector3D& mn) const
 {
   return false; 
+}
+
+Vector3D Sphere::generateUniform(float e1, float e2) const
+{
+    return Vector3D(0,0,0);
+}
+
+float Sphere::getArea() const
+{
+    return 0.0f;
 }

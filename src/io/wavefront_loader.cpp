@@ -25,16 +25,36 @@ Material parse_material(const vector<tinyobj::material_t> &materials,
         auto ambient_color = Color(m.ambient[0],m.ambient[1],m.ambient[2]);
         auto diffuse_color = Color(m.diffuse[0],m.diffuse[1],m.diffuse[2]);
         auto specular_color = Color(m.specular[0],m.specular[1],m.specular[2]);
-        double reflectance = (m.specular[0] + m.specular[1] + m.specular[2])/3.0f;
         auto transmittance = Color(m.transmittance[0],m.transmittance[1],m.transmittance[2]);
+        IllumType illum;
 
+        switch (m.illum) {
+        case 0:
+            illum = IllumType::OPAQUE;
+            break;
+        case 1:
+            illum = IllumType::MIRROR;
+            break;
+        case 2:
+            illum = IllumType::TRANSPARENT;
+            break;
+        case 3:
+            illum = IllumType::AREA_LIGHT;
+            break;
+        default:
+            illum = IllumType::OPAQUE;
+            break;
+        }
         Material mat{.ambient=ambient_color,
                      .diffuse=diffuse_color,
                      .specular=specular_color,
                      .spec_exp=m.shininess,
-                     .reflectance=reflectance,
                      .transmittance=transmittance,
-                     .index_of_ref=m.ior};
+                     .transparency=m.dissolve,
+                     .index_of_ref=m.ior,
+                     .illum=illum,
+                     .is_transparent=m.illum == 2,
+                     .is_lightsource=m.illum == 3};
         return mat;
     }
     // Fallback to default material
@@ -42,17 +62,20 @@ Material parse_material(const vector<tinyobj::material_t> &materials,
                  .diffuse=Color(0,0,0),
                  .specular=Color(0,0,0),
                  .spec_exp=0.0f,
-                 .reflectance=0.0f,
                  .transmittance=Color(0,0,0),
-                 .index_of_ref=0.0f};
+                 .transparency=0.0f,
+                 .index_of_ref=0.0f,
+                 .illum= IllumType::OPAQUE,
+                 .is_transparent=false,
+                 .is_lightsource=false};
     return mat;
 }
 
-vector<shared_ptr<BaseObject>> parse_faces(const tinyobj::shape_t &shape,
+vector<shared_ptr<Face>> parse_faces(const tinyobj::shape_t &shape,
                                            const vector<tinyobj::material_t> &materials,
                                            const tinyobj::attrib_t& attrib)
 {
-    vector<shared_ptr<BaseObject>> faces;
+    vector<shared_ptr<Face>> faces;
     size_t index_offset = 0;
 
     for (size_t f = 0; f < shape.mesh.num_face_vertices.size(); f++)
@@ -71,21 +94,21 @@ vector<shared_ptr<BaseObject>> parse_faces(const tinyobj::shape_t &shape,
             tinyobj::index_t idx = shape.mesh.indices[index_offset + v];
 
             // retrieve vertex coordinates
-            double vx = attrib.vertices[3 * idx.vertex_index + 0];
-            double vy = attrib.vertices[3 * idx.vertex_index + 1];
-            double vz = attrib.vertices[3 * idx.vertex_index + 2];
+            float vx = attrib.vertices[3 * idx.vertex_index + 0];
+            float vy = attrib.vertices[3 * idx.vertex_index + 1];
+            float vz = attrib.vertices[3 * idx.vertex_index + 2];
             t_vertices.push_back(Vector3D(vx, vy, vz));
-            double nx = 0, ny = 0, nz = 0;
+            float nx = 0, ny = 0, nz = 0;
             if (idx.normal_index >= 0)
             {
                 nx = attrib.normals[3 * idx.normal_index + 0];
                 ny = attrib.normals[3 * idx.normal_index + 1];
                 nz = attrib.normals[3 * idx.normal_index + 2];
             }
-            t_normals.push_back(Vector3D(nx, ny, nz).normalized());
+            t_normals.push_back(Vector3D(nx, ny, nz));
 
             // texture coordinates UNUSED
-            // double tx = 0, ty = 0;
+            // float tx = 0, ty = 0;
             // if (idx.texcoord_index >= 0)
             // {
             //  tx = attrib.texcoords[2 * idx.texcoord_index + 0];
@@ -96,8 +119,6 @@ vector<shared_ptr<BaseObject>> parse_faces(const tinyobj::shape_t &shape,
             green = attrib.colors[3 * size_t(idx.vertex_index) + 1];
             blue = attrib.colors[3 * size_t(idx.vertex_index) + 2];
         }
-        int material_id = shape.mesh.material_ids[f]; // material index
-        auto face_material = parse_material(materials, material_id);
 
         faces.push_back(make_shared<Triangle>(t_vertices[0],
                                               t_vertices[1],
@@ -105,8 +126,7 @@ vector<shared_ptr<BaseObject>> parse_faces(const tinyobj::shape_t &shape,
                                               t_normals[0],
                                               t_normals[1],
                                               t_normals[2],
-                                              Color(red,green,blue),
-                                              face_material));
+                                              Color(red,green,blue)));
         index_offset += fv;
     }
     return faces;
@@ -138,10 +158,14 @@ int parse_obj(const char *filename,
 
   for(size_t s = 0; s < shapes.size(); s++)
   {
-    vector<shared_ptr<BaseObject>> faces;
+    vector<shared_ptr<Face>> faces;
 
     faces = parse_faces(shapes[s], materials, attrib);
-    mesh.push_back(make_shared<Mesh>(faces, false, false, leaf_threshold, tree_type));
+    int material_id = shapes[s].mesh.material_ids[0]; // material index
+    auto material = parse_material(materials, material_id);
+
+    mesh.push_back(make_shared<Mesh>(faces, false, false, leaf_threshold, tree_type, material));
+
   }
   return 0;
 }

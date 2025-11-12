@@ -5,7 +5,7 @@
 #include <vector>
 
 #include "geometry/ray.h"
-#include "geometry/baseObject.h"
+#include "geometry/face.h"
 
 #include "bvh/bvh.h"
 
@@ -14,26 +14,45 @@ enum BVHType{
   MEDIAN,
   SAH
 };
-// an inclosed set of faces
+
+enum IllumType{
+    OPAQUE,
+    MIRROR,
+    TRANSPARENT,
+    AREA_LIGHT
+};
+
+struct Material{
+    Color ambient,diffuse,specular;
+    float spec_exp;
+    Color transmittance;
+    float transparency; // 1 == opaque; 0 == fully transparent
+    float index_of_ref;
+    IllumType illum;
+    bool is_transparent;
+    bool is_lightsource;
+};
 
 class Mesh{
 
 public:
-  Mesh(std::vector<shared_ptr<BaseObject>> faces, 
+  Mesh(std::vector<shared_ptr<Face>> faces, 
     bool is_mirror, 
     bool is_transparent,
     int leaf_threshold,
-    BVHType treeType);
+    BVHType treeType,
+    Material m);
+
   ~Mesh();
-  double hit(shared_ptr<BaseObject> &closest, Ray r);
+  float hit(shared_ptr<Face> &closest, Ray r);
  
   public:
     shared_ptr<BVH> bbox;
-    std::vector<shared_ptr<BaseObject>> faces;
+    std::vector<shared_ptr<Face>> faces;
     bool is_mirror;
     bool is_transparent;
     int size;
-    Material m;
+    Material material;
 };
 
 #endif

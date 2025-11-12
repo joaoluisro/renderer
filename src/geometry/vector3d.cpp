@@ -1,6 +1,6 @@
 #include "geometry/vector3d.h"
 
-Vector3D::Vector3D(double x, double y, double z)
+Vector3D::Vector3D(float x, float y, float z)
 {
   this->x = x;
   this->y = y;
@@ -18,7 +18,7 @@ Vector3D::~Vector3D()
 {
 }
 
-double Vector3D::operator[](int axis) const
+float Vector3D::operator[](int axis) const
 {
   if(axis == 0) return x;
   if(axis == 1) return y;
@@ -36,21 +36,21 @@ Vector3D Vector3D::operator-(Vector3D const &other) const
   return Vector3D(x - other.x, y - other.y, z - other.z);
 }
 
-Vector3D Vector3D::operator*(double lambda) const
+Vector3D Vector3D::operator*(float lambda) const
 {
   return Vector3D(lambda * x , lambda * y , lambda * z);
 }
 
-Vector3D Vector3D::operator+(double lambda) const
+Vector3D Vector3D::operator+(float lambda) const
 {
   return Vector3D(lambda + x , lambda + y , lambda + z);
 }
 
-Vector3D operator*(double s, const Vector3D& v) {
+Vector3D operator*(float s, const Vector3D& v) {
   return v * s;
 }
 
-double Vector3D::dot(Vector3D const &other) const
+float Vector3D::dot(Vector3D const &other) const
 {
   return (x * other.x + y * other.y + z * other.z);
 }
@@ -63,20 +63,20 @@ Vector3D Vector3D::cross(Vector3D const &other) const
      x * other.y - y * other.x);
 }
 
-double Vector3D::length() const
+float Vector3D::length() const
 {
   return sqrt(x * x + y * y + z*z);
 }
 
 Vector3D Vector3D::normalized() const
 {
-  double len = this->length();
+  float len = this->length();
   return Vector3D(this->x/len, this->y/len, this->z/len);
 }
 
 void Vector3D::normalize() 
 {
-  double len = this->length();
+  float len = this->length();
   x = x/len;
   y = y/len; 
   z = z/len;
@@ -90,4 +90,9 @@ void Vector3D::info()
 Vector3D Vector3D::to_blender() const
 {
   return Vector3D(x,z,-y);
+}
+
+Vector3D Vector3D::reflect(const Vector3D& normal) const
+{
+    return *this - 2*(this->dot(normal))*normal;
 }
