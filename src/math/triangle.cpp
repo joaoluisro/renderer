@@ -1,6 +1,6 @@
 #include <algorithm>
 
-#include "geometry/triangle.h"
+#include "math/triangle.h"
 
 #define EPS 1e-8
 
@@ -17,16 +17,9 @@ Triangle::Triangle(
   this->v0 = v0;
   this->v1 = v1;
   this->v2 = v2;
-  // if(fabs((n0 - n1).length()) < EPS)
-  // {
-  //   this->n0 = (v0 - v1).cross(v0 - v2);
-  // }
-  // else
-  // {
-    this->n0 = n0;
-    this->n1 = n1;
-    this->n2 = n2;
-  // }
+  this->n0 = n0;
+  this->n1 = n1;
+  this->n2 = n2;
   this->color = color;
 }
 
@@ -103,7 +96,6 @@ Vector3D Triangle::get_normal(const Vector3D& at) const {
   auto w1 = x1.cross( v0 - at).dot(N) / (area2*area2);
   auto w2 = x2.cross( v1 - at).dot(N) / (area2*area2);
 
-  // interpolates
   auto normal = n0 * w0 + n1 * w1 + n2 * w2;
   return normal;
 }

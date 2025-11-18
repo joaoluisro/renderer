@@ -124,7 +124,7 @@ Scene* scene_file(const char *filename, const int width, const int height, const
         {
             for(auto face : m->faces)
             {
-                auto l = make_shared<Light>(Light(Vector3D(0,0,0), Color(1,1,1), 100.0f, face));
+                auto l = make_shared<Light>(Light(Color(1,1,1), 100.0f, face));
                 lights.push_back(l);
                 cout << l->intensity << "\n";
             }

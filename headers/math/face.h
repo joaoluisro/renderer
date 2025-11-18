@@ -2,8 +2,8 @@
 #ifndef BASE_OBJECT_HEADER
 #define BASE_OBJECT_HEADER
 
-#include "geometry/vector3d.h"
-#include "geometry/ray.h"
+#include "math/vector3d.h"
+#include "math/ray.h"
 #include "core/color.h"
 
 class Face

@@ -1,7 +1,7 @@
 #include <math.h>
 
 #include "core/camera.h"
-#include "geometry/ray.h"
+#include "math/ray.h"
 
 Camera::Camera(Vector3D &origin, 
                Vector3D &view_point, 

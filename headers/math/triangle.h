@@ -3,7 +3,7 @@
 #ifndef TRIANGLE_HEADER
 #define TRIANGLE_HEADER
 
-#include "geometry/face.h"
+#include "math/face.h"
 
 class Triangle : public Face{
   public:

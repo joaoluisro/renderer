@@ -1,5 +1,5 @@
 
-#include "geometry/ray.h"
+#include "math/ray.h"
 
 Ray::Ray(Vector3D const &origin, Vector3D const &direction)
 {

@@ -6,8 +6,8 @@
 #include <utility>    
 #include <algorithm>
 
-#include "geometry/ray.h"
-#include "geometry/face.h"
+#include "math/ray.h"
+#include "math/face.h"
 
 using namespace std;
 

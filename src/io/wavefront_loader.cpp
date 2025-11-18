@@ -6,8 +6,8 @@
 #include <memory>
 #include <filesystem>
 
-#include "geometry/vector3d.h"
-#include "geometry/triangle.h"
+#include "math/vector3d.h"
+#include "math/triangle.h"
 
 #include "bvh/mesh.h"
 

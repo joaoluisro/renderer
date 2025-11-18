@@ -4,8 +4,8 @@
 #include <memory>
 #include <vector>
 
-#include "geometry/ray.h"
-#include "geometry/face.h"
+#include "math/ray.h"
+#include "math/face.h"
 
 #include "bvh/bvh.h"
 

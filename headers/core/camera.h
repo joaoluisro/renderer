@@ -1,8 +1,8 @@
 #ifndef CAMERA_HEADER
 #define CAMERA_HEADER
 
-#include "geometry/vector3d.h"
-#include "geometry/ray.h"
+#include "math/vector3d.h"
+#include "math/ray.h"
 
 #include <math.h>
 #include <vector>

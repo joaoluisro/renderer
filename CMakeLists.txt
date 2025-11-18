@@ -34,8 +34,7 @@ set(SRC_FILES
 )
 
 # ---- Target ----
-add_executable(${PROJECT_NAME} ${SRC_FILES}
-  src/core/light.cpp)
+add_executable(${PROJECT_NAME} ${SRC_FILES})
 message(STATUS "=== SRC_FILES ===")
 foreach(f IN LISTS SRC_FILES)
   message(STATUS "  ${f}")

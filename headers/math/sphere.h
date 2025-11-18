@@ -2,7 +2,7 @@
 #ifndef SPHERE_HEADER
 #define SPHERE_HEADER
 
-#include "geometry/face.h"
+#include "math/face.h"
 
 class Sphere : public Face{
   public:

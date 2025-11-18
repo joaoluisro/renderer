@@ -1,8 +1,7 @@
 #ifndef RAY_HEADER
 #define RAY_HEADER
 
-#include "geometry/vector3d.h"
-
+#include "math/vector3d.h"
 class Ray
 {
 public:
