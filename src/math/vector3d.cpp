@@ -1,4 +1,4 @@
-#include "geometry/vector3d.h"
+#include "math/vector3d.h"
 
 Vector3D::Vector3D(float x, float y, float z)
 {

@@ -41,7 +41,7 @@ vector<pair<float,shared_ptr<Face>>> buildCentroidList(vector<shared_ptr<Face>> 
   vector<pair<float,shared_ptr<Face>>> centroid_list;
   for(auto &face : faces)
   {
-    centroid_list.push_back(make_pair(face->centroid()[axis],face));
+    centroid_list.push_back(make_pair(face->getCentroid()[axis],face));
   }
   return centroid_list;
 }
@@ -113,7 +113,7 @@ shared_ptr<BVH> buildMidpointBVH(vector<shared_ptr<Face>>& faces, int threshold,
 
   for(auto &face : faces)
   {
-    auto centroid = face->centroid();
+    auto centroid = face->getCentroid();
     if(centroid[axis] < mid_point[axis])
     {
       left.push_back(face);
@@ -166,7 +166,7 @@ shared_ptr<BVH> buildSAHBVH(vector<shared_ptr<Face>>& faces, int threshold)
       int right_count = 0;
       for(auto face : faces)
       {
-        if(face->centroid()[i] < min[i] + interval * j)
+        if(face->getCentroid()[i] < min[i] + interval * j)
         {
           left_count++;
         }
@@ -197,7 +197,7 @@ shared_ptr<BVH> buildSAHBVH(vector<shared_ptr<Face>>& faces, int threshold)
   vector<shared_ptr<Face>> left,right;
   for(auto &face : faces)
   {
-    auto centroid = face->centroid();
+    auto centroid = face->getCentroid();
     if(centroid[best_axis] < min[best_axis] + best_length)
     {
       left.push_back(face);
@@ -229,55 +229,60 @@ inline bool slabAABB(const Ray& r,
                      float& tNear,
                      float& tFar)
 {
-  tNear = 0.0;
-  tFar  = std::numeric_limits<float>::infinity();
+    const Vector3D bounds[2] = { bmin, bmax };
 
-  for (int i = 0; i < 3; ++i) 
-  {
-    float o = r.origin[i];
-    float d = r.direction[i];
+    float txmin = (bounds[r.sign[0]].x - r.origin.x) * r.invDir.x;
+    float txmax = (bounds[1 - r.sign[0]].x - r.origin.x) * r.invDir.x;
 
-    if (fabs(d) < EPSILON)
-    {
-      if (o < bmin[i] || o > bmax[i]) return false;
-      continue;
-    }
+    float tymin = (bounds[r.sign[1]].y - r.origin.y) * r.invDir.y;
+    float tymax = (bounds[1 - r.sign[1]].y - r.origin.y) * r.invDir.y;
 
-    float invD = 1.0 / d;
-    float t0   = (bmin[i] - o) * invD;
-    float t1   = (bmax[i] - o) * invD;
-    if (invD < 0.0) std::swap(t0, t1);
+    if ((txmin > tymax) || (tymin > txmax))
+        return false;
 
-    tNear = std::max(tNear, t0);
-    tFar  = std::min(tFar, t1);
-    if (tFar < tNear) return false;
-  }
-  
-  return tFar >= 0.0;
+    if (tymin > txmin) txmin = tymin;
+    if (tymax < txmax) txmax = tymax;
+
+    float tzmin = (bounds[r.sign[2]].z - r.origin.z) * r.invDir.z;
+    float tzmax = (bounds[1 - r.sign[2]].z - r.origin.z) * r.invDir.z;
+
+    if ((txmin > tzmax) || (tzmin > txmax))
+        return false;
+
+    if (tzmin > txmin) txmin = tzmin;
+    if (tzmax < txmax) txmax = tzmax;
+
+    tNear = txmin;
+    tFar  = txmax;
+    return tFar >= 0.0f;
 }
 
-float BVH::hit(std::shared_ptr<Face> &closest, const Ray &r, float bestT)
+float BVH::hit(std::shared_ptr<Face> &closest, const Ray &r, float bestT, float bestGlobal) const
 {
 
   // test this node's bounding box
   float tNear, tFar;
-  if (!slabAABB(r, min, max, tNear, tFar) || tNear > bestT)
+  if (!slabAABB(r, min, max, tNear, tFar) || tNear > bestT || tNear > bestGlobal)
       return -1.0;  // No hit with this node
 
   // if leaf node, test all faces
-  if (is_leaf) {
+  if (is_leaf)
+  {
       float closestT = bestT;
       std::shared_ptr<Face> closestObj = nullptr;
 
-      for (auto& face : faces) {
+      for (const auto &face : faces)
+      {
           float t = face->intersects(r);
 
-          if (t > EPSILON && t < closestT) {
+          if (t > EPSILON && t < closestT)
+          {
               closestT = t;
               closestObj = face;
           }
       }
-      if (closestObj) {
+      if (closestObj)
+      {
           closest = closestObj;
           return closestT;
       }
@@ -303,26 +308,26 @@ float BVH::hit(std::shared_ptr<Face> &closest, const Ray &r, float bestT)
   {
     if (tNearL < tNearR)
     {
-      leftHit = left->hit(leftClosest, r, bestT);
+      leftHit = left->hit(leftClosest, r, bestT, bestGlobal);
       if (leftHit > 0.0) bestT = leftHit;
 
-      rightHit = right->hit(rightClosest, r, bestT);
+      rightHit = right->hit(rightClosest, r, bestT, bestGlobal);
     }
     else
     {
-      rightHit = right->hit(rightClosest, r, bestT);
+      rightHit = right->hit(rightClosest, r, bestT, bestGlobal);
       if (rightHit > 0.0) bestT = rightHit;
 
-      leftHit = left->hit(leftClosest, r, bestT);
+      leftHit = left->hit(leftClosest, r, bestT, bestGlobal);
     }
   }
   else if(hitLeft)
   {
-      leftHit = left->hit(leftClosest, r, bestT);
+      leftHit = left->hit(leftClosest, r, bestT, bestGlobal);
   }
   else if(hitRight)
   {
-      rightHit = right->hit(rightClosest, r, bestT);
+      rightHit = right->hit(rightClosest, r, bestT, bestGlobal);
   }
 
   // determine which child produced the closest hit

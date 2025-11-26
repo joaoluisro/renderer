@@ -1,4 +1,4 @@
-#include "geometry/sphere.h"
+#include "math/sphere.h"
 
 Sphere::~Sphere()
 {
@@ -40,7 +40,7 @@ Color Sphere::get_color() const
   return color;
 }
 
-Vector3D Sphere::centroid() const
+Vector3D Sphere::getCentroid() const
 {
   return this->origin;
 }
@@ -58,7 +58,7 @@ bool Sphere::isOutOfBounds(const Vector3D& mx, const Vector3D& mn) const
   return false; 
 }
 
-Vector3D Sphere::generateUniform(float e1, float e2) const
+Vector3D Sphere::generateUniform() const
 {
     return Vector3D(0,0,0);
 }

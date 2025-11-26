@@ -14,6 +14,7 @@ class FrameBuffer{
     ~FrameBuffer();
     const Pixel& at(int i, int j) const;
     void clamp();
+    Color getColor(int i, int j) const;
     void set(int i, int j, Color &c);
     void writeToPPM(const char* filename, int width, int height);
 

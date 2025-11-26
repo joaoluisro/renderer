@@ -114,35 +114,37 @@ Scene* scene_file(const char *filename, const int width, const int height, const
             // lights.push_back(make_shared<Light>(l));
         }
     }
-    cout << "Rendering: " << wavefront_filepath << "\n";
+    parse_obj(wavefront_filepath.c_str(), meshes, 4, BVHType::SAH);
 
-    parse_obj(wavefront_filepath.c_str(), meshes, 16, BVHType::SAH);
-    int count = 0;
+    // int count = 0;
     for(auto m : meshes)
     {
         if(m->material.is_lightsource)
         {
+            m->material.emittance = Color(1,1,1);
             for(auto face : m->faces)
             {
-                auto l = make_shared<Light>(Light(Vector3D(0,0,0), Color(1,1,1), 100.0f, face));
+                auto l = make_shared<Light>(Light(Color(1,1,1), 100.0f, face));
                 lights.push_back(l);
-                cout << l->intensity << "\n";
             }
         }
-        std::cout<<"Mesh " << count << " \n";
-        std::cout << "Color : ";
-        m->faces[0]->get_color().info();
-        std::cout << "Ambient : ";
-        m->material.ambient.info();
-
-        std::cout << "Diffuse : ";
-        m->material.diffuse.info();
-
-        std::cout << "Specular :";
-        m->material.specular.info();
-        std::cout<<"------------------------\n";
-        count++;
     }
+    //     // std::cout<<"Mesh " << count << " \n";
+    //     // std::cout << "Color : ";
+    //     // m->faces[0]->get_color().info();
+    //     // std::cout << "Ambient : ";
+    //     // m->material.ambient.info();
+
+    //     // std::cout << "Diffuse : ";
+    //     // m->material.diffuse.info();
+
+    //     // std::cout << "Specular :";
+    //     // m->material.specular.info();
+    //     // std::cout << "IOR : " ;
+    //     // cout << m->material.index_of_ref << "\n";
+    //     // std::cout<<"------------------------\n";
+    //     count++;
+    // }
     Scene *s = new Scene(*camera, meshes, lights);
     return s;
 }

@@ -6,8 +6,8 @@
 #include <utility>    
 #include <algorithm>
 
-#include "geometry/ray.h"
-#include "geometry/face.h"
+#include "math/ray.h"
+#include "math/face.h"
 
 using namespace std;
 
@@ -30,7 +30,7 @@ class BVH {
     
     ~BVH(){};
 
-    float hit(shared_ptr<Face> &closest, const Ray &r, float bestT);
+    float hit(shared_ptr<Face> &closest, const Ray &r, float bestT, float bestGlobal) const;
 };
 
 namespace BvhBBox{

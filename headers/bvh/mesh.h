@@ -4,8 +4,8 @@
 #include <memory>
 #include <vector>
 
-#include "geometry/ray.h"
-#include "geometry/face.h"
+#include "math/ray.h"
+#include "math/face.h"
 
 #include "bvh/bvh.h"
 
@@ -16,16 +16,17 @@ enum BVHType{
 };
 
 enum IllumType{
-    OPAQUE,
-    MIRROR,
-    TRANSPARENT,
-    AREA_LIGHT
+    OPAQUE = 0,
+    SPECULAR = 1,
+    TRANSPARENT = 2,
+    MIRROR = 3,
+    AREA_LIGHT = 4
 };
 
 struct Material{
     Color ambient,diffuse,specular;
     float spec_exp;
-    Color transmittance;
+    Color transmittance,emittance;
     float transparency; // 1 == opaque; 0 == fully transparent
     float index_of_ref;
     IllumType illum;
@@ -44,7 +45,7 @@ public:
     Material m);
 
   ~Mesh();
-  float hit(shared_ptr<Face> &closest, Ray r);
+  float hit(shared_ptr<Face> &closest, const Ray &r, float min_found) const;
  
   public:
     shared_ptr<BVH> bbox;

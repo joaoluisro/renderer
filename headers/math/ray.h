@@ -1,15 +1,15 @@
 #ifndef RAY_HEADER
 #define RAY_HEADER
 
-#include "geometry/vector3d.h"
-
+#include "math/vector3d.h"
 class Ray
 {
 public:
   Vector3D origin, direction;
-  int box_tests, leaf_tests;
+  Vector3D invDir;
+  int sign[3];
 public:
-  Ray(Vector3D const &origin, Vector3D const &direction);
+  Ray(const Vector3D &origin, const Vector3D &direction);
   ~Ray();
   bool intersects(Vector3D const &p){
 
