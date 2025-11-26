@@ -28,10 +28,10 @@ Camera::~Camera()
 {
 }
 
-Vector3D Camera::pixelToWorldSpace(int i, int j) const
+Vector3D Camera::pixelToWorldSpace(int i, int j, float e1, float e2) const
 {
-  float ndcX = (2*(i + 0.5)/width  - 1) * aspect * scale;
-  float ndcY = (1 - 2*(j + 0.5)/height) * scale;
+  float ndcX = (2*(i + e1)/width  - 1) * aspect * scale;
+  float ndcY = (1 - 2*(j + e2)/height) * scale;
   return ((right*ndcX + up*ndcY) + front).normalized();
 }
 

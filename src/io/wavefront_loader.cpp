@@ -26,6 +26,7 @@ Material parse_material(const vector<tinyobj::material_t> &materials,
         auto diffuse_color = Color(m.diffuse[0],m.diffuse[1],m.diffuse[2]);
         auto specular_color = Color(m.specular[0],m.specular[1],m.specular[2]);
         auto transmittance = Color(m.transmittance[0],m.transmittance[1],m.transmittance[2]);
+        auto emittance = Color(m.emission[0], m.emission[1], m.emission[2]);
         IllumType illum;
 
         switch (m.illum) {
@@ -33,12 +34,15 @@ Material parse_material(const vector<tinyobj::material_t> &materials,
             illum = IllumType::OPAQUE;
             break;
         case 1:
-            illum = IllumType::MIRROR;
+            illum = IllumType::SPECULAR;
             break;
         case 2:
             illum = IllumType::TRANSPARENT;
             break;
         case 3:
+            illum = IllumType::MIRROR;
+            break;
+        case 4:
             illum = IllumType::AREA_LIGHT;
             break;
         default:
@@ -50,11 +54,12 @@ Material parse_material(const vector<tinyobj::material_t> &materials,
                      .specular=specular_color,
                      .spec_exp=m.shininess,
                      .transmittance=transmittance,
+                     .emittance=emittance,
                      .transparency=m.dissolve,
                      .index_of_ref=m.ior,
                      .illum=illum,
                      .is_transparent=m.illum == 2,
-                     .is_lightsource=m.illum == 3};
+                     .is_lightsource=m.illum == 4};
         return mat;
     }
     // Fallback to default material
@@ -63,6 +68,7 @@ Material parse_material(const vector<tinyobj::material_t> &materials,
                  .specular=Color(0,0,0),
                  .spec_exp=0.0f,
                  .transmittance=Color(0,0,0),
+                 .emittance=Color(0,0,0),
                  .transparency=0.0f,
                  .index_of_ref=0.0f,
                  .illum= IllumType::OPAQUE,

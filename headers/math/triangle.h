@@ -4,6 +4,7 @@
 #define TRIANGLE_HEADER
 
 #include "math/face.h"
+#include "math/randomnumbergenerator.h"
 
 class Triangle : public Face{
   public:
@@ -12,21 +13,20 @@ class Triangle : public Face{
 
     ~Triangle();
 
-    float intersects(const Ray& r) const override;
+    inline float intersects(const Ray& r) const override;
     Vector3D get_normal(const Vector3D& at) const override;
     Color get_color() const override;
-    Vector3D centroid() const override; 
+    Vector3D getCentroid() const override;
     Vector3D max() const override;
     Vector3D min() const override;
     bool isOutOfBounds(const Vector3D& mx, const Vector3D& mn) const override;
-    Vector3D generateUniform(float e1, float e2) const override;
+    Vector3D generateUniform() const override;
     float getArea() const override;
 
-  private:
-    Vector3D v0,v1,v2,n0,n1,n2;
+  public:
+    Vector3D v0,v1,v2,n0,n1,n2,v0v1,v0v2,centroid,max_bound,min_bound;
     Color color;
-    Vector3D normal;
-    bool is_mirror;
+    float area, area2_inv;
 };
 
 #endif

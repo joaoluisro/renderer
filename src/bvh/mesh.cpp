@@ -32,8 +32,9 @@ Mesh::Mesh(std::vector<shared_ptr<Face>> faces,
 Mesh::~Mesh()
 {
 }
-float Mesh::hit(shared_ptr<Face> &closest, Ray r)
+
+float Mesh::hit(shared_ptr<Face> &closest, const Ray &r, float min_found) const
 {
-  float t_global_min = 1e+9f;
-  return bbox->hit(closest, r, t_global_min);
+  float best_t = 1e+9f;
+  return bbox->hit(closest, r,best_t, min_found);
 }

@@ -1,14 +1,19 @@
 
 #include "math/ray.h"
 
-Ray::Ray(Vector3D const &origin, Vector3D const &direction)
+Ray::Ray(const Vector3D &origin, const Vector3D &direction) : origin(origin), direction(direction)
 {
-  this->origin = origin;
-  this->direction = direction;
-  this->box_tests = 0;
-  this->leaf_tests = 0;
+    invDir.x = 1.0f / direction.x;
+    invDir.y = 1.0f / direction.y;
+    invDir.z = 1.0f / direction.z;
+
+    sign[0] = invDir.x < 0.0f;
+    sign[1] = invDir.y < 0.0f;
+    sign[2] = invDir.z < 0.0f;
 }
 
 Ray::~Ray()
 {
 }
+
+

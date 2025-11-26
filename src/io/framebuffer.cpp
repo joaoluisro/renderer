@@ -46,6 +46,12 @@ void FrameBuffer::clamp()
   // }
 }
 
+Color FrameBuffer::getColor(int i, int j) const
+{
+    auto p = this->at(i,j);
+    return Color(p.r, p.g, p.b);
+}
+
 void FrameBuffer::set(int i, int j, Color &c)
 {
   data[i*width + j].r = c.r;

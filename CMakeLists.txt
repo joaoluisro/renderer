@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.16)  # 3.12+ needed for CONFIGURE_DEPENDS
 project(renderer LANGUAGES CXX)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 # C++ standard
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -46,11 +48,22 @@ target_include_directories(${PROJECT_NAME} PRIVATE
   "${CMAKE_SOURCE_DIR}/libs"
 )
 
-# OpenMP (fix: actually call find_package)
-find_package(OpenMP)
-if(OpenMP_CXX_FOUND)
-  target_link_libraries(${PROJECT_NAME} PRIVATE OpenMP::OpenMP_CXX)
+find_package(OpenMP REQUIRED)
+
+set(LIBOMP_PREFIX "/opt/homebrew/opt/libomp")
+
+# Help CMake/AppleClang find OpenMP
+if(APPLE AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    # # Tell CMake what flags & library to try
+    set(OpenMP_CXX_FLAGS "-Xpreprocessor -fopenmp")
+    set(OpenMP_CXX_LIB_NAMES "omp")
+    set(OpenMP_omp_LIBRARY "${LIBOMP_PREFIX}/lib/libomp.dylib")
+
+    include_directories(SYSTEM "${LIBOMP_PREFIX}/include")
+    link_directories("${LIBOMP_PREFIX}/lib")
 endif()
+
+target_link_libraries(renderer PRIVATE OpenMP::OpenMP_CXX)
 
 # Nice folders in IDEs (Qt Creator, VS, etc.)
 source_group(TREE "${CMAKE_SOURCE_DIR}" FILES ${SRC_FILES})

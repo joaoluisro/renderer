@@ -5,6 +5,8 @@
 #include "io/parsing.h"
 
 using namespace std;
+#include <omp.h>
+#include <iostream>
 
 
 int main(int argc, char *argv[])
@@ -27,5 +29,6 @@ int main(int argc, char *argv[])
   float fov = 60.0f;
   Scene *s = Parse::scene_file(filename, width, height, fov);
   s->render("output.ppm",width,height,n_samples);
+
 }
 

@@ -30,7 +30,7 @@ class BVH {
     
     ~BVH(){};
 
-    float hit(shared_ptr<Face> &closest, const Ray &r, float bestT);
+    float hit(shared_ptr<Face> &closest, const Ray &r, float bestT, float bestGlobal) const;
 };
 
 namespace BvhBBox{

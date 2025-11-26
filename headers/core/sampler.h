@@ -3,11 +3,13 @@
 
 #include <math/vector3d.h>
 #include <cmath>
+#include <math/randomnumbergenerator.h>
 
-namespace Sample
+
+namespace Sampler
 {
-    Vector3D uniformSample(const float eta1, const float eta2);
-    Vector3D cosineWeightedSample(const float eta1, const float eta2);
+    Vector3D uniform();
+    Vector3D cosineWeighted(Vector3D n);
 }
 
 #endif // SAMPLER_H
