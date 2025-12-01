@@ -1,12 +1,11 @@
 #include "bvh/bvh.h"
 using namespace std;
 
-#define THRESHOLD 4
 #define EPSILON 1e-5
 
 namespace BvhBBox
 {
-Vector3D computeMax(vector<shared_ptr<Face>> faces)
+vec3 computeMax(vector<shared_ptr<Face>> faces)
 {
   auto x_max= -1e+9f;
   auto y_max= -1e+9f;
@@ -18,10 +17,10 @@ Vector3D computeMax(vector<shared_ptr<Face>> faces)
     if(max.y > y_max) y_max = max.y;
     if(max.z > z_max) z_max = max.z;
   }
-  return Vector3D(x_max, y_max, z_max);
+  return vec3(x_max, y_max, z_max);
 }
 
-Vector3D computeMin(vector<shared_ptr<Face>> faces)
+vec3 computeMin(vector<shared_ptr<Face>> faces)
 {
   auto x_min= 1e+9f;
   auto y_min= 1e+9f;
@@ -33,7 +32,7 @@ Vector3D computeMin(vector<shared_ptr<Face>> faces)
     if(min.y < y_min) y_min = min.y;
     if(min.z < z_min) z_min = min.z;
   }
-  return Vector3D(x_min, y_min, z_min);
+  return vec3(x_min, y_min, z_min);
 }
 
 vector<pair<float,shared_ptr<Face>>> buildCentroidList(vector<shared_ptr<Face>> faces, int axis)
@@ -48,8 +47,8 @@ vector<pair<float,shared_ptr<Face>>> buildCentroidList(vector<shared_ptr<Face>> 
 
 shared_ptr<BVH> buildMedianBVH(vector<shared_ptr<Face>> &faces, int threshold) {
   // compute min/max bounds from faces
-  Vector3D mn = computeMin(faces);
-  Vector3D mx = computeMax(faces);
+  vec3 mn = computeMin(faces);
+  vec3 mx = computeMax(faces);
   if (faces.size() <= threshold)
   {
     return make_shared<BVH>(nullptr,nullptr,mn,mx,true,faces);
@@ -102,8 +101,8 @@ shared_ptr<BVH> buildMedianBVH(vector<shared_ptr<Face>> &faces, int threshold) {
 shared_ptr<BVH> buildMidpointBVH(vector<shared_ptr<Face>>& faces, int threshold, int axis)
 {
   // compute min/max bounds from faces
-  Vector3D mn = computeMin(faces);
-  Vector3D mx = computeMax(faces);
+  vec3 mn = computeMin(faces);
+  vec3 mx = computeMax(faces);
   if (faces.size() <= threshold)
   {
     return make_shared<BVH>(nullptr,nullptr,mn,mx,true,faces);
@@ -224,12 +223,12 @@ shared_ptr<BVH> buildSAHBVH(vector<shared_ptr<Face>>& faces, int threshold)
 }
 
 inline bool slabAABB(const Ray& r,
-                     const Vector3D& bmin,
-                     const Vector3D& bmax,
+                     const vec3& bmin,
+                     const vec3& bmax,
                      float& tNear,
                      float& tFar)
 {
-    const Vector3D bounds[2] = { bmin, bmax };
+    const vec3 bounds[2] = { bmin, bmax };
 
     float txmin = (bounds[r.sign[0]].x - r.origin.x) * r.invDir.x;
     float txmax = (bounds[1 - r.sign[0]].x - r.origin.x) * r.invDir.x;

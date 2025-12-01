@@ -3,43 +3,43 @@
 
 #include <math.h>
 #include <iostream>
-class Vector3D
+class vec3
 {
 public:
   float x,y,z;
 
 public:
-  Vector3D();
-  Vector3D(float x, float y, float z);
+  vec3();
+  vec3(float x, float y, float z);
 
-  ~Vector3D();
+  ~vec3();
   
-  Vector3D& operator=(Vector3D const&) = default;
+  vec3& operator=(vec3 const&) = default;
 
-  Vector3D operator+(Vector3D const& other) const;
+  vec3 operator+(vec3 const& other) const;
 
-  Vector3D operator-(Vector3D const& other) const;
+  vec3 operator-(vec3 const& other) const;
   
   float operator[](int axis) const;
 
-  float dot(Vector3D const& other) const;
+  float dot(vec3 const& other) const;
   
-  Vector3D cross(Vector3D const& other) const;
+  vec3 cross(vec3 const& other) const;
   
-  Vector3D operator*(float lambda) const;
-  Vector3D operator+(float lambda) const;
+  vec3 operator*(float lambda) const;
+  vec3 operator+(float lambda) const;
 
-  friend Vector3D operator*(float s, const Vector3D& v);
+  friend vec3 operator*(float s, const vec3& v);
 
-  friend Vector3D operator/(float s, const Vector3D& v);
-  Vector3D reflect(const Vector3D &normal) const;
+  friend vec3 operator/(float s, const vec3& v);
+  vec3 reflect(const vec3 &normal) const;
 
   float length() const;
   
-  Vector3D normalized() const;
+  vec3 normalized() const;
   void normalize();
   void info();
-  Vector3D to_blender() const;
+  vec3 to_blender() const;
 };
 
 #endif

@@ -22,11 +22,11 @@ Material parse_material(const vector<tinyobj::material_t> &materials,
     {
         const tinyobj::material_t &m = materials[mat_id];
 
-        auto ambient_color = Color(m.ambient[0],m.ambient[1],m.ambient[2]);
-        auto diffuse_color = Color(m.diffuse[0],m.diffuse[1],m.diffuse[2]);
-        auto specular_color = Color(m.specular[0],m.specular[1],m.specular[2]);
-        auto transmittance = Color(m.transmittance[0],m.transmittance[1],m.transmittance[2]);
-        auto emittance = Color(m.emission[0], m.emission[1], m.emission[2]);
+        auto ambient_color = Radiance(m.ambient[0],m.ambient[1],m.ambient[2]);
+        auto diffuse_color = Radiance(m.diffuse[0],m.diffuse[1],m.diffuse[2]);
+        auto specular_color = Radiance(m.specular[0],m.specular[1],m.specular[2]);
+        auto transmittance = Radiance(m.transmittance[0],m.transmittance[1],m.transmittance[2]);
+        auto emittance = Radiance(m.emission[0], m.emission[1], m.emission[2]);
         IllumType illum;
 
         switch (m.illum) {
@@ -63,12 +63,12 @@ Material parse_material(const vector<tinyobj::material_t> &materials,
         return mat;
     }
     // Fallback to default material
-    Material mat{.ambient=Color(0,0,0),
-                 .diffuse=Color(0,0,0),
-                 .specular=Color(0,0,0),
+    Material mat{.ambient=Radiance(0,0,0),
+                 .diffuse=Radiance(0,0,0),
+                 .specular=Radiance(0,0,0),
                  .spec_exp=0.0f,
-                 .transmittance=Color(0,0,0),
-                 .emittance=Color(0,0,0),
+                 .transmittance=Radiance(0,0,0),
+                 .emittance=Radiance(0,0,0),
                  .transparency=0.0f,
                  .index_of_ref=0.0f,
                  .illum= IllumType::OPAQUE,
@@ -88,8 +88,8 @@ vector<shared_ptr<Face>> parse_faces(const tinyobj::shape_t &shape,
     {
         int fv = shape.mesh.num_face_vertices[f];
 
-        vector<Vector3D> t_vertices;
-        vector<Vector3D> t_normals;
+        vector<vec3> t_vertices;
+        vector<vec3> t_normals;
         tinyobj::real_t red;
         tinyobj::real_t green;
         tinyobj::real_t blue;
@@ -103,7 +103,7 @@ vector<shared_ptr<Face>> parse_faces(const tinyobj::shape_t &shape,
             float vx = attrib.vertices[3 * idx.vertex_index + 0];
             float vy = attrib.vertices[3 * idx.vertex_index + 1];
             float vz = attrib.vertices[3 * idx.vertex_index + 2];
-            t_vertices.push_back(Vector3D(vx, vy, vz));
+            t_vertices.push_back(vec3(vx, vy, vz));
             float nx = 0, ny = 0, nz = 0;
             if (idx.normal_index >= 0)
             {
@@ -111,7 +111,7 @@ vector<shared_ptr<Face>> parse_faces(const tinyobj::shape_t &shape,
                 ny = attrib.normals[3 * idx.normal_index + 1];
                 nz = attrib.normals[3 * idx.normal_index + 2];
             }
-            t_normals.push_back(Vector3D(nx, ny, nz));
+            t_normals.push_back(vec3(nx, ny, nz));
 
             // texture coordinates UNUSED
             // float tx = 0, ty = 0;
@@ -132,7 +132,7 @@ vector<shared_ptr<Face>> parse_faces(const tinyobj::shape_t &shape,
                                               t_normals[0],
                                               t_normals[1],
                                               t_normals[2],
-                                              Color(red,green,blue)));
+                                              Radiance(red,green,blue)));
         index_offset += fv;
     }
     return faces;

@@ -24,10 +24,10 @@ enum IllumType{
 };
 
 struct Material{
-    Color ambient,diffuse,specular;
+    Radiance ambient,diffuse,specular;
     float spec_exp;
-    Color transmittance,emittance;
-    float transparency; // 1 == opaque; 0 == fully transparent
+    Radiance transmittance,emittance;
+    float transparency;
     float index_of_ref;
     IllumType illum;
     bool is_transparent;

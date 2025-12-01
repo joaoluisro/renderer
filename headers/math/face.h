@@ -11,13 +11,13 @@ class Face
 public:
   virtual ~Face() = default;
   virtual float intersects(const Ray& r) const = 0;
-  virtual Vector3D get_normal(const Vector3D& at) const = 0;
-  virtual Color get_color() const = 0;
-  virtual Vector3D getCentroid() const = 0;
-  virtual Vector3D max() const  = 0;
-  virtual Vector3D min() const = 0;
-  virtual bool isOutOfBounds(const Vector3D &max,const Vector3D &min) const = 0;
-  virtual Vector3D generateUniform() const = 0;
+  virtual vec3 get_normal(const vec3& at) const = 0;
+  virtual Radiance get_color() const = 0;
+  virtual vec3 getCentroid() const = 0;
+  virtual vec3 max() const  = 0;
+  virtual vec3 min() const = 0;
+  virtual bool isOutOfBounds(const vec3 &max,const vec3 &min) const = 0;
+  virtual vec3 generateUniform() const = 0;
   virtual float getArea() const = 0;
 };
 

@@ -6,23 +6,23 @@
 
 class Sphere : public Face{
   public:
-    Sphere(Vector3D &o, float r, const Color& c) : 
+    Sphere(vec3 &o, float r, const Radiance& c) :
     origin(o),radius(r), color(c){}
     ~Sphere();
 
     float intersects(const Ray& r) const override;
-    Vector3D get_normal(const Vector3D& at) const override;
-    Color get_color() const override;
-    Vector3D getCentroid() const override;
-    Vector3D max() const override;
-    Vector3D min() const override;
-    bool isOutOfBounds(const Vector3D& mx,const Vector3D& mn) const override;
-    Vector3D generateUniform() const override;
+    vec3 get_normal(const vec3& at) const override;
+    Radiance get_color() const override;
+    vec3 getCentroid() const override;
+    vec3 max() const override;
+    vec3 min() const override;
+    bool isOutOfBounds(const vec3& mx,const vec3& mn) const override;
+    vec3 generateUniform() const override;
     float getArea() const override;
   private:
     float radius;
-    Vector3D origin;
-    Color color;
+    vec3 origin;
+    Radiance color;
 };
 
 #endif

@@ -1,19 +1,20 @@
 #ifndef COLOR_HEADER
 #define COLOR_HEADER
-class Color
+class Radiance
 {
   public:
-    Color();
-    Color(float r, float g, float b);
-    ~Color();
-    Color operator+(const Color& other) const;
-    Color operator-(const Color& other) const;
-    Color operator*(Color& other);
+    Radiance();
+    Radiance(float r, float g, float b);
+    ~Radiance();
+    Radiance operator+(const Radiance& other) const;
+    Radiance operator-(const Radiance& other) const;
+    Radiance operator*(Radiance& other);
 
-    Color& operator*=(float lambda);
-    Color operator*(float lambda) const;
+    Radiance& operator*=(float lambda);
+    Radiance operator*(float lambda) const;
+    Radiance operator/(float lambda) const;
 
-    Color& operator+=(const Color &other);
+    Radiance& operator+=(const Radiance &other);
     void info();
   public:
     float r,g,b;

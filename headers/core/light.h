@@ -9,12 +9,12 @@
 class Light
 {
 public:
-  Color color;
+  Radiance color;
   float intensity;
   std::shared_ptr<Face> geometry;
 
 public:
-  Light(Color color, float intensity, std::shared_ptr<Face> geometry);
+  Light(Radiance color, float intensity, std::shared_ptr<Face> geometry);
   ~Light();
 };
 

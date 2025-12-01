@@ -23,10 +23,11 @@ using namespace std;
 struct Intersection{
     bool missed;
     shared_ptr<Face> face;
-    Vector3D point;
+    vec3 point;
     float t;
     Material material;
 };
+
 
 class Scene{
   public:
@@ -37,14 +38,16 @@ class Scene{
 
     inline Intersection testIntersection(const Ray& r) const;
 
-    Color Li(const Ray &w0, int n_samples, int depth);
+    Radiance integrateNEE(const vec3 &w0, const Intersection &hit, const vec3 &n_hit, const int n_samplesr) const;
+    Radiance integrateIndirect(const vec3 &w0, const Intersection &hit, const vec3 &n_hit, const int n_samples, int depth);
+    Radiance L_transparent(const vec3 &w0, const Intersection &hit, const vec3 &n_hit, const int n_samples, int depth);
 
+    Radiance L_mirror(const Ray &w0, const Intersection &hit, const vec3 &n_hit, int n_samples, int depth);
 
-    // inline Color traceRay(const Ray &r,const int n_samples, int depth);
-    // Color integrateNEE(Vector3D p, Vector3D n, Material hit_material, shared_ptr<Face> hit, int n_samples);
-    // Color integrateIndirect(Vector3D p, Vector3D n, Ray r, Material hit_material, shared_ptr<Face> hit, int n_samples, int depth);
-    inline Color shadeTransparent(const Vector3D& dir, const shared_ptr<Face> face, const Vector3D& p) const;
-    inline Color getFresnel(float &trn, float &ref) const;
+    Radiance Li(const Ray &w0, int n_samples,bool is_delta, int depth);
+
+    inline Radiance shadeTransparent(const vec3& dir, const shared_ptr<Face> face, const vec3& p) const;
+    inline Radiance getFresnel(float &trn, float &ref) const;
   private:
     Camera camera;
     vector<shared_ptr<Mesh>> meshes;

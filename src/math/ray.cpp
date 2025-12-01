@@ -1,7 +1,7 @@
 
 #include "math/ray.h"
 
-Ray::Ray(const Vector3D &origin, const Vector3D &direction) : origin(origin), direction(direction)
+Ray::Ray(const vec3 &origin, const vec3 &direction) : origin(origin), direction(direction)
 {
     invDir.x = 1.0f / direction.x;
     invDir.y = 1.0f / direction.y;

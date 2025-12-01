@@ -1,33 +1,33 @@
 #include "core/color.h"
 #include <iostream>
-Color::Color()
+Radiance::Radiance()
 {
   r=0;
   g=0;
   b=0;
 }
 
-Color::Color(float r, float g, float b){
+Radiance::Radiance(float r, float g, float b){
   this->r = r;
   this->g = g;
   this->b = b;
 }
-Color::~Color(){
+Radiance::~Radiance(){
 
 }
-Color Color::operator+(const Color& other) const
+Radiance Radiance::operator+(const Radiance& other) const
 {
-    return Color(other.r+r, other.g+g, other.b+b);
+    return Radiance(other.r+r, other.g+g, other.b+b);
 }
-Color Color::operator-(const Color& other) const
+Radiance Radiance::operator-(const Radiance& other) const
 {
-    return Color(other.r-r, other.g-g, other.b-b);
+    return Radiance(other.r-r, other.g-g, other.b-b);
 }
-Color Color::operator*(Color& other)
+Radiance Radiance::operator*(Radiance& other)
 {
-    return Color(other.r*r, other.g*g, other.b*b);
+    return Radiance(other.r*r, other.g*g, other.b*b);
 }
-Color& Color::operator*=(float lambda)
+Radiance& Radiance::operator*=(float lambda)
 {
   r *= lambda;
   g *= lambda;
@@ -35,12 +35,18 @@ Color& Color::operator*=(float lambda)
   return *this;
 }
 
-Color Color::operator*(float lambda) const
+Radiance Radiance::operator*(float lambda) const
 {
-  return Color(r*lambda, g*lambda, b*lambda);
+  return Radiance(r*lambda, g*lambda, b*lambda);
 }
 
-Color& Color::operator+=(const Color &other)
+Radiance Radiance::operator/(float lambda) const
+{
+    return Radiance(r/lambda, g/lambda, b/lambda);
+}
+
+
+Radiance& Radiance::operator+=(const Radiance &other)
 {
   r += other.r;
   g += other.g;
@@ -48,7 +54,7 @@ Color& Color::operator+=(const Color &other)
   return *this;
 }
 
-void Color::info()
+void Radiance::info()
 {
     std::cout << r << " " << g << " " << b << "\n";
 }

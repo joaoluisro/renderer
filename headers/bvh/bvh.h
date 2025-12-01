@@ -14,15 +14,15 @@ using namespace std;
 class BVH { 
   public:
     shared_ptr<BVH> left, right;
-    Vector3D min, max;
+    vec3 min, max;
     bool is_leaf;
     vector<shared_ptr<Face>> faces;
 
     BVH(
       shared_ptr<BVH> left, 
       shared_ptr<BVH> right,
-      const Vector3D &mn, 
-      const Vector3D &mx, 
+      const vec3 &mn, 
+      const vec3 &mx, 
       bool is_leaf,
       vector<shared_ptr<Face>> faces): left(left),right(right), min(mn), max(mx), is_leaf(is_leaf), faces(faces){}
     

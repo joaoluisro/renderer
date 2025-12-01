@@ -1,15 +1,21 @@
 #include "core/scene.h"
 
-#define MAX_BOUNCE 1
+#define MAX_BOUNCE 4
 #define MAX_VAL 1e+9
-#define BACKGROUND_COLOR Color(1,1,1)
-#define NULL_RADIANCE Color(0,0,0)
+#define BACKGROUND_COLOR Radiance(0,0,0)
+#define NULL_RADIANCE Radiance(0,0,0)
 #define EPSILON 1e-6
 
-#define LIGHT_INTENSITY 15.0f
+#define LIGHT_INTENSITY 5.0f
 #define MIRROR_FALLOFF 0.8f
 #define WEIGHT_DIRECT_LIGHT 0.5f
 #define WEIGHT_INDIRECT_LIGHT 0.5f
+
+#define RR_START_DEPTH 3
+#define RR_TERMINATION_PROB 0.8f
+
+#define GOTHROUGH false
+
 #include <sstream>
 #include <iomanip>
 #include <algorithm>
@@ -33,10 +39,10 @@ Scene::~Scene()
 {
 }
 
-Vector3D refractDirection(const Vector3D &I, const Vector3D &N, float ior)
+vec3 refractDirection(const vec3 &I, const vec3 &N, float ior)
 {
-    Vector3D dir = I.normalized();
-    Vector3D n   = N.normalized();
+    vec3 dir = I.normalized();
+    vec3 n   = N.normalized();
 
     float cosi = std::clamp(dir.dot(n), -1.0f, 1.0f);
     float etai = 1.0f;       // air
@@ -56,13 +62,13 @@ Vector3D refractDirection(const Vector3D &I, const Vector3D &N, float ior)
 
     if (k < 0.0f) {
         // Total internal reflection – caller should not use this direction
-        return Vector3D(0, 0, 0);
+        return vec3(0, 0, 0);
     }
 
     return eta * dir + (eta * cosi - sqrtf(k)) * n;
 }
 
-void fresnel(const Vector3D &I, const Vector3D &N, const float &ior, float &kr)
+float fresnel(const vec3 &I, const vec3 &N, const float &ior)
 {
     float cosi = std::clamp(I.dot(N), -1.0f, 1.0f);
     float etai = 1.0f;
@@ -75,15 +81,14 @@ void fresnel(const Vector3D &I, const Vector3D &N, const float &ior, float &kr)
     // Snell's law
     float sint = etai / etat * sqrtf(std::max(0.0f, 1.0f - cosi * cosi));
     if (sint >= 1.0f) {
-        kr = 1.0f;  // Total internal reflection
-        return;
+        return 1.0f;  // Total internal reflection
     }
 
     float cost = sqrtf(std::max(0.0f, 1.0f - sint * sint));
     cosi = std::fabs(cosi);
     float Rs = ((etat * cosi) - (etai * cost)) / ((etat * cosi) + (etai * cost));
     float Rp = ((etai * cosi) - (etat * cost)) / ((etai * cosi) + (etat * cost));
-    kr = (Rs * Rs + Rp * Rp) * 0.5f;
+    return (Rs * Rs + Rp * Rp) * 0.5f;
 }
 
 inline Intersection Scene::testIntersection(const Ray& r) const
@@ -109,46 +114,272 @@ inline Intersection Scene::testIntersection(const Ray& r) const
                         .material = m};
 }
 
-Color brdf(Material m,
-           Vector3D p,
-           Vector3D n,
-           Ray r)
+// Radiance evalBSDF(const Material &m,
+//                 const vec3 &p,
+//                 const vec3 &n,
+//                 const vec3 &wi,
+//                 const vec3 &w0,
+//                 float &pdf_factor,
+//                 bool &is_delta)
+// {
+//     Radiance shading;
+
+//     switch (m.illum)
+//     {
+//     case IllumType::OPAQUE:
+//         shading = m.diffuse/(M_PI);
+//         pdf_factor = wi.dot(n)/M_PI;
+//         break;
+//     case IllumType::SPECULAR:
+//     {
+//         Radiance diff = m.diffuse /(M_PI);
+//         vec3 r = w0.reflect(n).normalized();
+//         Radiance spec = m.specular * std::pow(std::max(0.0f,r.dot(wi)), m.spec_exp);
+//         shading = (spec * 0.7) + (diff * 0.3);
+
+//         float roi = std::clamp(r.dot(wi),0.0f, 1.0f);
+
+//         float spec_factor = (m.spec_exp + 2.0f) * std::pow(roi, m.spec_exp)/(2.0f* M_PI);
+
+//         float diff_factor = wi.dot(n)/M_PI;
+
+//         pdf_factor = spec_factor * 0.7 + diff_factor * 0.3;
+
+//         is_delta = false;
+//         break;
+//     }
+//     case IllumType::TRANSPARENT:
+//         break;
+//     default:
+//         shading = Radiance(1,1,1);
+//         break;
+//     }
+//     return shading;
+// }
+
+
+Radiance evalBSDF(const Material &m,
+                  const vec3 &p,
+                  const vec3 &n,
+                  const vec3 &wi,
+                  const vec3 &wo,
+                  float &pdf_factor,
+                  bool &is_delta)
 {
-    Color shading;
+    Radiance shading;
+
+    float cosI = std::max(0.0f, n.dot(wi));
+
     switch (m.illum)
     {
     case IllumType::OPAQUE:
-        shading = m.diffuse * (1.0f/M_PI);
-
+    {
+        Radiance diff = m.diffuse / M_PI;
+        shading = diff;
+        pdf_factor = cosI / M_PI;
+        is_delta = false;
         break;
+    }
+
     case IllumType::SPECULAR:
     {
-        Color diff = m.diffuse * (1.0f/M_PI);
-        Color spec = m.specular * std::pow(std::max(0.0f,n.dot(r.direction * -1)), m.spec_exp);
-        shading = (diff * 0.5) + (spec * 0.5);
+        float s = m.spec_exp;
+
+        // Diffuse BRDF
+        Radiance diff = m.diffuse / M_PI;
+
+        // Phong specular BRDF
+        vec3 r = wo.reflect(n).normalized(); // or wo.reflect(n) depending on your convention
+        float roi = std::max(0.0f, r.dot(wi));
+
+        Radiance spec = m.specular * ((s + 2.0f) / (2.0f * M_PI)) * std::pow(roi, s);
+        // Full BRDF is sum of lobes
+        shading = (diff + spec) * 0.5;
+
+        // PDFs for each lobe
+        float diff_factor = cosI / M_PI;
+        float spec_factor = (s + 1.0f) * std::pow(roi, s) / (2.0f * M_PI);
+        // Sampling weights (example: based on energy)
+        float Ed = 0.3;
+        float Es = 0.7;
+        float sum = Ed + Es;
+        float wd = (sum > 0.0f) ? Ed / sum : 0.5f;
+        float ws = (sum > 0.0f) ? Es / sum : 0.5f;
+
+        pdf_factor = wd * diff_factor + ws * spec_factor;
+        is_delta   = false;
         break;
     }
+
     case IllumType::TRANSPARENT:
-        std::cout << " transparency !\n";
+        // handled elsewhere via delta reflection/refraction
+        pdf_factor = 0.0f;
+        is_delta = true; // here it *is* delta
         break;
+
     default:
-        shading = Color(1,1,1);
+        shading = Radiance(1,1,1);
+        pdf_factor = 0.0f;
+        is_delta = false;
         break;
     }
+
     return shading;
 }
 
-// L0(p <- w0) =
 
-Color Scene::Li(const Ray &w0, int n_samples, int depth)
+float getLightFactor(shared_ptr<Face> geometry, const vec3 &p_light, const vec3 &p_surface)
+{
+    float area = geometry->getArea();
+    vec3 n_light = geometry->get_normal(p_light).normalized() * -1.0f;
+    float dist = (p_light - p_surface).length();
+    float cos_y = n_light.dot((p_surface - p_light).normalized());
+    return (dist*dist/cos_y)/area;
+}
+
+Radiance Scene::integrateNEE(const vec3 &w0, const Intersection &hit, const vec3 &n_hit, const int n_samples) const
+{
+    Radiance L;
+    for(const auto &l : lights)
+    {
+        for(int i = 0; i < n_samples; i++)
+        {
+            vec3 sampled_point = l->geometry->generateUniform();
+
+            float area = l->geometry->getArea();
+
+            vec3 n_light = l->geometry->get_normal(sampled_point).normalized() * -1.0f;
+
+            vec3 wi = (hit.point - sampled_point);
+            float dist = wi.length();
+            wi.normalize();
+
+            float cos_omega = n_hit.dot(wi * -1.0f);    // cos between face normal and ray from light source
+            float cos_y = n_light.dot(wi);              // cos between light normal and ray from light source
+
+            if(cos_omega <= 0 || cos_y <= 0) continue;
+
+            cos_omega = std::min(cos_omega, 1.0f);
+            cos_y     = std::min(cos_y, 1.0f);
+
+            Ray r_from_light(sampled_point + EPSILON * n_light, wi);
+
+            Intersection intersection_light = testIntersection(r_from_light);
+
+            if(intersection_light.face == hit.face || intersection_light.material.is_transparent)
+            {
+                float pdf_factor_light = (dist*dist/cos_y)/area;
+                float pdf_factor_bsdf;
+                bool is_delta;
+                Radiance fr = evalBSDF(hit.material, hit.point, n_hit, wi, w0, pdf_factor_bsdf, is_delta);
+
+                float msi_weight = (pdf_factor_light)/(pdf_factor_bsdf + pdf_factor_light);
+                L += (fr * msi_weight) * cos_omega * l->color * LIGHT_INTENSITY;
+            }
+        }
+    }
+    return L/n_samples;
+}
+
+Radiance Scene::integrateIndirect(const vec3 &w0, const Intersection &hit, const vec3 &n_hit, int n_samples, int depth)
+{
+    float bsdf_factor;
+    bool is_delta = false;
+
+    vec3 wi = Sample::fromBSDF(n_hit, w0, hit.material);
+
+    float cos_omega = wi.dot(n_hit);
+
+    if(cos_omega < 0.0f) return NULL_RADIANCE;
+
+    cos_omega = std::min(1.0f, cos_omega);
+
+    vec3 sample_origin = hit.point + (EPSILON * n_hit);
+    Ray sample_ray(sample_origin, wi);
+
+    Radiance fr = evalBSDF(hit.material, hit.point, n_hit, wi, w0, bsdf_factor, is_delta);
+    Radiance sampled_radiance;
+
+
+    Intersection hit_indirect = testIntersection(sample_ray);
+    float msi_weight = (1.0f/bsdf_factor);
+    float light_factor;
+    if(hit_indirect.material.is_lightsource)
+    {
+        sampled_radiance = hit_indirect.material.emittance * LIGHT_INTENSITY;
+        light_factor = getLightFactor(hit_indirect.face,hit_indirect.point, sample_origin);
+        msi_weight = bsdf_factor/(bsdf_factor + light_factor);
+    }
+    else
+    {
+        sampled_radiance = Li(sample_ray, n_samples, is_delta, depth + 1);
+    }
+    return (sampled_radiance * msi_weight) * fr * cos_omega;
+}
+
+Radiance Scene::L_mirror(const Ray &w0, const Intersection &hit, const vec3 &n_hit, const int n_samples, int depth)
+{
+    vec3 reflection_dir = w0.direction.reflect(n_hit).normalized();
+    Ray r_reflect(hit.point + EPSILON * n_hit, reflection_dir);
+    return Li(r_reflect, n_samples, true, depth + 1) * MIRROR_FALLOFF;
+}
+
+Radiance Scene::L_transparent(const vec3 &w0,
+                              const Intersection &hit,
+                              const vec3 &n_hit,
+                              const int n_samples,
+                              int depth)
+{
+    if(GOTHROUGH)
+    {
+        Ray passthrough(hit.point + w0 * EPSILON, w0);
+        return Li(passthrough, n_samples, true, depth + 1);
+    }
+    // w0: ray *direction* (from camera to scene), so incoming at the surface is -w0
+    vec3 wo = w0; // outgoing from surface toward camera? adjust to your convention
+
+    vec3 nl = (wo.dot(n_hit) < 0.0f) ? n_hit : n_hit * -1.0f;
+
+    bool outside = (wo.dot(n_hit) < 0.0f);
+    vec3 bias = nl * EPSILON;
+    vec3 origin = outside ? hit.point + bias : hit.point - bias;
+
+    float ior = hit.material.index_of_ref;
+
+    // Compute reflection dir
+    vec3 reflectDir = wo.reflect(nl).normalized();
+
+    // Compute refraction dir (use oriented normal nl!)
+    vec3 refractDir = refractDirection(w0, nl, ior).normalized();
+
+    // Fresnel using oriented normal nl
+    float kr = fresnel(wo, nl, ior); // kr = reflectance
+
+    // If refractDirection fails (TIR), just reflect
+    if (refractDir.x == 0 && refractDir.y == 0 && refractDir.z == 0) {
+        Ray reflectRay(origin, reflectDir);
+        return Li(reflectRay, n_samples, true, depth + 1);
+    }
+
+    Ray reflectRay(origin, reflectDir);
+    Ray refractRay(origin, refractDir);
+
+    // Radiance Lr = Li(reflectRay, n_samples, true, depth + 1);
+    Radiance Lr;
+    Radiance Lt = Li(refractRay, n_samples, true, depth + 1);
+
+    return Lr * kr + Lt * (1.0f - kr);
+}
+
+Radiance Scene::Li(const Ray &w0, int n_samples, bool is_delta, int depth)
 {
     Intersection hit = testIntersection(w0);
 
     if(hit.missed) return NULL_RADIANCE;
 
-    Color Le(0,0,0);
+    Radiance Le;
 
-    if(hit.material.is_lightsource && depth == 0)
+    if(hit.material.is_lightsource && (is_delta || depth == 0))
     {
         Le = hit.material.emittance * LIGHT_INTENSITY;
         return Le;
@@ -156,105 +387,48 @@ Color Scene::Li(const Ray &w0, int n_samples, int depth)
 
     if(depth > MAX_BOUNCE) return Le;
 
-    Vector3D n_hit = hit.face->get_normal(hit.point).normalized();
+    vec3 n_hit = hit.face->get_normal(hit.point).normalized();
 
-    /* Mirror hit, just reflect */
     if(hit.material.illum == IllumType::MIRROR)
     {
-        Vector3D reflection_dir = w0.direction.reflect(n_hit).normalized();
-        Ray r_reflect(hit.point + EPSILON * n_hit, reflection_dir);
-        return Li(r_reflect, n_samples, depth + 1) * MIRROR_FALLOFF;
+        return L_mirror(w0, hit, n_hit, n_samples, depth);
     }
-    /* Create refracted and reflected ray */
     if(hit.material.illum == IllumType::TRANSPARENT)
     {
-        Color refractionColor(0,0,0);
-        Color reflectionColor(0,0,0);
-        float kr;
-        Vector3D nl = (w0.direction.dot(n_hit) < 0.0) ? n_hit : n_hit * -1;
-
-        fresnel(w0.direction, n_hit, hit.material.index_of_ref, kr);
-        bool outside = w0.direction.dot(n_hit) < 0;
-        Vector3D bias = nl * EPSILON;
-        // there is refraction
-        if(kr < 1)
-        {
-            auto refractDir = refractDirection(w0.direction, n_hit, hit.material.index_of_ref);
-            refractDir.normalize();
-            Vector3D refractOrigin = outside ? hit.point + bias : hit.point - bias;
-            Ray refractRay(refractOrigin, refractDir);
-            refractionColor = Li(refractRay, n_samples, depth + 1);
-        }
-        Vector3D reflectionDir = w0.direction.reflect(nl).normalized();
-        Vector3D reflectOrigin = outside ? hit.point + bias : hit.point - bias;
-        Ray reflectRay(reflectOrigin, reflectionDir);
-        reflectionColor = Li(reflectRay, n_samples, depth + 1);
-
-        auto transparent_color = (reflectionColor * kr) + refractionColor * (1 - kr);
-        return transparent_color;
+        return L_transparent(w0.direction.normalized(), hit, n_hit, n_samples, depth);
     }
 
+    float rr_scale = 1.0f;
 
-    Color L_indirect, L_direct;
-    for(const auto &l : lights)
+
+    Radiance L_scene;
+    static RandomNumberGenerator rng;
+
+    if(depth >= RR_START_DEPTH)
     {
-        for(int i = 0; i < n_samples; i++)
-        {
-            Vector3D sampled_point = l->geometry->generateUniform();
 
-            float area = l->geometry->getArea();
+        if(rng.generate() > RR_TERMINATION_PROB) return Le;
 
-            Vector3D n_light = l->geometry->get_normal(sampled_point).normalized() * -1.0f;
 
-            Vector3D w = (hit.point - sampled_point);
-            float dist = w.length();
-            w.normalize();
-
-            float cos_omega = n_hit.dot(w * -1.0f);    // cos between face normal and ray from light source
-            float cos_y = n_light.dot(w);              // cos between light normal and ray from light source
-
-            if(cos_omega <= 0 || cos_y <= 0) continue;
-
-            cos_omega = std::min(cos_omega, 1.0f);
-            cos_y     = std::min(cos_y, 1.0f);
-
-            Ray r_from_light(sampled_point + EPSILON * n_light, w);
-
-            Intersection intersection_light = testIntersection(r_from_light);
-
-            if(intersection_light.face == hit.face)
-            {
-                float p_w = (1.0f/area)*(dist*dist/cos_y);
-                L_direct += brdf(hit.material, hit.point, n_hit, r_from_light) * cos_omega * l->color * LIGHT_INTENSITY  * (1.0f/p_w);
-            }
-        }
+        rr_scale = 1.0f / RR_TERMINATION_PROB;
     }
 
-    for(int i = 0; i < n_samples; i++)
+
+    if(rng.generate() > 0.5)
     {
-        Vector3D wi = Sampler::cosineWeighted(n_hit);
-
-        float cos_omega = wi.dot(n_hit);
-
-        if(cos_omega < 0.0f) continue;
-
-        cos_omega = std::min(1.0f,cos_omega);
-
-        Vector3D sample_origin = hit.point + (EPSILON * n_hit);
-        Ray sample_ray(sample_origin, wi);
-        float pdf_factor = cos_omega/M_PI;
-
-        Color fr = brdf(hit.material, hit.point, n_hit, sample_ray);
-
-        L_indirect += Li(sample_ray, n_samples, depth + 1) * fr * cos_omega * (1.0f/pdf_factor);
+        L_scene = integrateNEE(w0.direction.normalized() * -1.0f, hit, n_hit, n_samples);
+    }
+    else
+    {
+        L_scene = integrateIndirect(w0.direction.normalized() * -1.0f, hit, n_hit, n_samples, depth) * rr_scale;
     }
 
-    Color L;
-    L = Le + (L_direct * (1.0f/n_samples)) + (L_indirect * (1.0f/n_samples));
+
+
+    Radiance L = Le + L_scene;
 
     return L;
 }
-
 
 void Scene::render(const char *filename,
                    const int width,
@@ -265,8 +439,8 @@ void Scene::render(const char *filename,
   FrameBuffer frame_buffer(width, height);
   FrameBuffer frame_tmp(width, height);
 
-  int spp = 128;
-  std::vector<Color> L(height * width);
+  int spp = n_sample;
+  std::vector<Radiance> L(height * width);
   // for(auto k = 0; k < spp; k++)
   // {
   //     #pragma omp parallel for collapse(2)
@@ -275,7 +449,7 @@ void Scene::render(const char *filename,
   //         for(auto j = 0; j < width; j++)
   //         {
   //             Ray traced_ray(camera.origin, camera.pixelToWorldSpace(i,j, rng.generate(), rng.generate()));
-  //             L[i*width + j] += Li(traced_ray, n_sample, 0) * (1.0f/spp);
+  //             L[i*width + j] += Li(traced_ray, n_sample,false, 0) * (1.0f/spp);
   //             frame_buffer.set(i,j,L[i*width + j]);
   //             auto color = frame_buffer.getColor(i,j);
   //             frame_tmp.set(i,j,color);
@@ -288,7 +462,6 @@ void Scene::render(const char *filename,
   //     string name = "result/" + filename;
   //     frame_tmp.writeToPPM(name.c_str(), width, height);
   // }
-  // std::vector<Color> L(height * width);
   #pragma omp parallel for collapse(3)
   for(auto k = 0; k < spp; k++)
   {
@@ -297,7 +470,7 @@ void Scene::render(const char *filename,
           for(auto j = 0; j < width; j++)
           {
               Ray traced_ray(camera.origin, camera.pixelToWorldSpace(i,j, rng.generate(), rng.generate()));
-              L[i*width + j] += Li(traced_ray, n_sample, 0) * (1.0f/spp);
+              L[i*width + j] += Li(traced_ray, n_sample, false, 0) * (1.0f/spp);
           }
       }
   }

@@ -3,8 +3,8 @@
 #include "core/camera.h"
 #include "math/ray.h"
 
-Camera::Camera(Vector3D &origin, 
-               Vector3D &view_point, 
+Camera::Camera(vec3 &origin,
+               vec3 &view_point,
                float fov,
                int height,
                int width)
@@ -16,7 +16,7 @@ Camera::Camera(Vector3D &origin,
   this->aspect = float(width) / float(height);
   this->width = width;
   this->height = height;
-  Vector3D worldUp(0,1,0);
+  vec3 worldUp(0,1,0);
   this->front = (view_point_transformed - origin_transformed).normalized();
   this->right = (front.cross(worldUp)).normalized();
   this->up    = (right.cross(front)).normalized();
@@ -28,7 +28,7 @@ Camera::~Camera()
 {
 }
 
-Vector3D Camera::pixelToWorldSpace(int i, int j, float e1, float e2) const
+vec3 Camera::pixelToWorldSpace(int i, int j, float e1, float e2) const
 {
   float ndcX = (2*(i + e1)/width  - 1) * aspect * scale;
   float ndcY = (1 - 2*(j + e2)/height) * scale;

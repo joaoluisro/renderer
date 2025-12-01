@@ -40,7 +40,7 @@ Scene* scene_file(const char *filename, const int width, const int height, const
         ret = ret.substr(comma_position + 1, ret.length());
 
         auto z_as_str = ret;
-        return Vector3D(std::stod(x_as_str), std::stod(y_as_str), std::stod(z_as_str));
+        return vec3(std::stod(x_as_str), std::stod(y_as_str), std::stod(z_as_str));
     };
 
     auto parse_wavefront = [&file]()
@@ -54,7 +54,7 @@ Scene* scene_file(const char *filename, const int width, const int height, const
 
     auto parse_camera = [&file, &parse_point, &width, &height, &fov]()
     {
-        Vector3D origin, look_at;
+        vec3 origin, look_at;
         std::string tmp, origin_as_str, look_at_as_str, fov_as_str;
 
         std::getline(file, tmp);
@@ -70,8 +70,8 @@ Scene* scene_file(const char *filename, const int width, const int height, const
 
     auto parse_lighting = [&file, &parse_point]()
     {
-        Vector3D pos, c_tmp;
-        Color color;
+        vec3 pos, c_tmp;
+        Radiance color;
         std::string pos_as_str, type_as_str, color_as_str, tmp;
         std::getline(file, tmp);
         // Since we only allow point lights, do nothing
@@ -87,7 +87,7 @@ Scene* scene_file(const char *filename, const int width, const int height, const
         color.r = c_tmp.x;
         color.g = c_tmp.y;
         color.b = c_tmp.z;
-        return Vector3D(0,0,0);
+        return vec3(0,0,0);
         // return Light(pos.to_blender(), color, 100.0);
     };
 
@@ -121,10 +121,10 @@ Scene* scene_file(const char *filename, const int width, const int height, const
     {
         if(m->material.is_lightsource)
         {
-            m->material.emittance = Color(1,1,1);
+            m->material.emittance = Radiance(1,1,1);
             for(auto face : m->faces)
             {
-                auto l = make_shared<Light>(Light(Color(1,1,1), 100.0f, face));
+                auto l = make_shared<Light>(Light(Radiance(1,1,1), 100.0f, face));
                 lights.push_back(l);
             }
         }

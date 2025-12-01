@@ -5,13 +5,13 @@
 #define EPS 1e-8
 
 Triangle::Triangle(
-  Vector3D v0, 
-  Vector3D v1, 
-  Vector3D v2,
-  Vector3D n0,
-  Vector3D n1,
-  Vector3D n2,
-  Color color)
+  vec3 v0,
+  vec3 v1,
+  vec3 v2,
+  vec3 n0,
+  vec3 n1,
+  vec3 n2,
+  Radiance color)
     : v0(v0), v1(v1), v2(v2), n0(n0), n1(n1), n2(n2), color(color)
 {
    v0v1 = v1 - v0;
@@ -23,12 +23,12 @@ Triangle::Triangle(
    auto max_y = std::max({v0.y,v1.y,v2.y});
    auto max_z = std::max({v0.z,v1.z,v2.z});
 
-   max_bound = Vector3D(max_x, max_y, max_z);
+   max_bound = vec3(max_x, max_y, max_z);
 
    auto min_x = std::min({v0.x,v1.x,v2.x});
    auto min_y = std::min({v0.y,v1.y,v2.y});
    auto min_z = std::min({v0.z,v1.z,v2.z});
-   min_bound = Vector3D(min_x, min_y, min_z);
+   min_bound = vec3(min_x, min_y, min_z);
 
 }
 
@@ -57,37 +57,37 @@ inline float Triangle::intersects(const Ray& r) const
   }
 
   // Muller-Trombore
-  Vector3D P = r.origin + t * r.direction;
+  vec3 P = r.origin + t * r.direction;
 
-  Vector3D Ne;
+  vec3 Ne;
 
-  Vector3D v0p = P - v0;
+  vec3 v0p = P - v0;
   Ne = v0v1.cross(v0p);
   if (N.dot(Ne) < 0) return -1;
 
-  Vector3D v2v1 = v2 - v1;
-  Vector3D v1p = P - v1;
+  vec3 v2v1 = v2 - v1;
+  vec3 v1p = P - v1;
   Ne = v2v1.cross(v1p);
   if (N.dot(Ne) < 0) return -1;
 
-  Vector3D v2v0 = v0 - v2;
-  Vector3D v2p = P - v2;
+  vec3 v2v0 = v0 - v2;
+  vec3 v2p = P - v2;
   Ne = v2v0.cross(v2p);
   if (N.dot(Ne) < 0) return -1;
 
   return t;
 }
 
-Color Triangle::get_color() const
+Radiance Triangle::get_color() const
 {
-  return Color(color.r,color.g,color.b);
+  return Radiance(color.r,color.g,color.b);
 }
 
-Vector3D Triangle::getCentroid() const{
+vec3 Triangle::getCentroid() const{
     return centroid;
 }
 
-Vector3D Triangle::get_normal(const Vector3D& at) const {
+vec3 Triangle::get_normal(const vec3& at) const {
     return n0;
 
   // auto x0 = v1 - at;
@@ -101,18 +101,18 @@ Vector3D Triangle::get_normal(const Vector3D& at) const {
   // return n0 * w0 + n1 * w1 + n2 * w2;
 }
 
-Vector3D Triangle::max() const {
+vec3 Triangle::max() const {
 
     return max_bound;
 
 }
 
-Vector3D Triangle::min() const {
+vec3 Triangle::min() const {
     return min_bound;
 
 }
 
-bool Triangle::isOutOfBounds(const Vector3D& mx,const Vector3D& mn) const
+bool Triangle::isOutOfBounds(const vec3& mx,const vec3& mn) const
 {
   auto v_min = min();
   if(v_min.x < mn.x ||v_min.y < mn.y ||v_min.z < mn.z ) return true;
@@ -121,7 +121,7 @@ bool Triangle::isOutOfBounds(const Vector3D& mx,const Vector3D& mn) const
   return false;
 }
 
-Vector3D Triangle::generateUniform() const
+vec3 Triangle::generateUniform() const
 {
     static RandomNumberGenerator rng;
     float e1 = rng.generate();

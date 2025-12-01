@@ -7,7 +7,7 @@ Sphere::~Sphere()
 float Sphere::intersects(const Ray& r) const
 {
   // Vector from sphere this->origin to r origin
-  Vector3D L = r.origin - this->origin;
+  vec3 L = r.origin - this->origin;
 
   // Quadratic coefficients A t^2 + B t + C = 0
   float A = r.direction.dot(r.direction);
@@ -30,37 +30,37 @@ float Sphere::intersects(const Ray& r) const
   return(t0);
 }
 
-Vector3D Sphere::get_normal(const Vector3D& at) const
+vec3 Sphere::get_normal(const vec3& at) const
 {
-  return Vector3D(at - origin) * (1/radius);
+  return vec3(at - origin) * (1/radius);
 }
 
-Color Sphere::get_color() const
+Radiance Sphere::get_color() const
 {
   return color;
 }
 
-Vector3D Sphere::getCentroid() const
+vec3 Sphere::getCentroid() const
 {
   return this->origin;
 }
-Vector3D Sphere::max() const
+vec3 Sphere::max() const
 {
   return this->origin + radius;
 }
-Vector3D Sphere::min() const
+vec3 Sphere::min() const
 {
   return this->origin + (-radius);
 }
 
-bool Sphere::isOutOfBounds(const Vector3D& mx, const Vector3D& mn) const
+bool Sphere::isOutOfBounds(const vec3& mx, const vec3& mn) const
 {
   return false; 
 }
 
-Vector3D Sphere::generateUniform() const
+vec3 Sphere::generateUniform() const
 {
-    return Vector3D(0,0,0);
+    return vec3(0,0,0);
 }
 
 float Sphere::getArea() const
