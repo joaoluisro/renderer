@@ -18,13 +18,15 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
 file(GLOB_RECURSE SRC_CPP CONFIGURE_DEPENDS
   "${CMAKE_SOURCE_DIR}/src/*.cpp"
   "${CMAKE_SOURCE_DIR}/src/*.c"
+  "${CMAKE_SOURCE_DIR}/src/*.h"
+  "${CMAKE_SOURCE_DIR}/src/*.hpp"
 )
 
 file(GLOB_RECURSE HDR_ALL CONFIGURE_DEPENDS
   "${CMAKE_SOURCE_DIR}/src/*.h"
   "${CMAKE_SOURCE_DIR}/src/*.hpp"
-  "${CMAKE_SOURCE_DIR}/headers/*.h"
-  "${CMAKE_SOURCE_DIR}/headers/*.hpp"
+  "${CMAKE_SOURCE_DIR}/src/*.h"
+  "${CMAKE_SOURCE_DIR}/src/*.hpp"
 )
 
 set(SRC_FILES
@@ -36,7 +38,8 @@ set(SRC_FILES
 )
 
 # ---- Target ----
-add_executable(${PROJECT_NAME} ${SRC_FILES})
+add_executable(${PROJECT_NAME} ${SRC_FILES}
+  src/core/definitions.h)
 message(STATUS "=== SRC_FILES ===")
 foreach(f IN LISTS SRC_FILES)
   message(STATUS "  ${f}")
@@ -44,7 +47,7 @@ endforeach()
 
 # Include paths
 target_include_directories(${PROJECT_NAME} PRIVATE
-  "${CMAKE_SOURCE_DIR}/headers"
+  "${CMAKE_SOURCE_DIR}/src"
   "${CMAKE_SOURCE_DIR}/libs"
 )
 

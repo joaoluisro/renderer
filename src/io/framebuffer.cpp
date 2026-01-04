@@ -46,13 +46,13 @@ void FrameBuffer::clamp()
   // }
 }
 
-Radiance FrameBuffer::getColor(int i, int j) const
+Spectrum FrameBuffer::getColor(int i, int j) const
 {
     auto p = this->at(i,j);
-    return Radiance(p.r, p.g, p.b);
+    return Spectrum(p.r, p.g, p.b);
 }
 
-void FrameBuffer::set(int i, int j, Radiance &c)
+void FrameBuffer::set(int i, int j, Spectrum &c)
 {
   data[i*width + j].r = c.r;
   data[i*width + j].g = c.g;

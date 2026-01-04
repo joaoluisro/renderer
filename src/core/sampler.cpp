@@ -6,6 +6,7 @@ namespace Sample
     vec3 fromBSDF(vec3 n, vec3 w0, Material m)
     {
         vec3 wi;
+        return cosineWeighted(n);
         switch (m.illum)
         {
         case IllumType::OPAQUE:
@@ -13,11 +14,14 @@ namespace Sample
             break;
         case IllumType::SPECULAR:
         {
-            // wi = phongSpecular(n, w0, m.spec_exp);
-
+            wi = phongSpecular(n, w0, m.spec_exp);
+        }
+            break;
+        case IllumType::SPECULAR_DIFFUSE:
+        {
             static RandomNumberGenerator rng;
             float k = rng.generate();
-            if(k < 0.7)
+            if(k < 0.5)
             {
                 wi = phongSpecular(n, w0, m.spec_exp);
             }
@@ -81,12 +85,12 @@ namespace Sample
         float eta2 = rng.generate();
 
         float theta, phi;
-        theta = acos(sqrt(eta1));
+        float s1 = sqrt(1 - (eta1*eta1));
         phi = 2 * M_PI * eta2;
         float x,y,z;
-        x = cos(phi)*sin(theta);
-        y = sin(phi)*sin(theta);
-        z = cos(theta);
+        x = cos(phi) * s1;
+        y = sin(phi) * s1;
+        z = eta1;
 
         vec3 t, b;
         build_orthonormal_basis(n, t, b);
@@ -117,6 +121,7 @@ namespace Sample
         return wi.normalized();
     }
 
+
     // radiance L += Sampler::select( L_direct, L_indirect,{0.1,0.9}, kwargs*)
 
 
@@ -129,8 +134,10 @@ namespace Sample
 
 }
 
+Sampler::Sampler() {}
 
 
-
-
-
+float Sampler::nextScalar()
+{
+    return rng.generate();
+}

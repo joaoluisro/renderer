@@ -2,34 +2,24 @@
 #define TINYOBJLOADER_IMPLEMENTATION
 #include "tinyobjloader/tiny_obj_loader.h"
 
-#include <vector>
-#include <memory>
-#include <filesystem>
+#include "io/wavefront_loader.h"
 
-#include "math/vector3d.h"
-#include "math/triangle.h"
-
-#include "bvh/mesh.h"
-
-using namespace std;
-
-#define DEBUG true
-
-Material parse_material(const vector<tinyobj::material_t> &materials,
-                        const int mat_id)
+Material parseMaterial(const vector<tinyobj::material_t> &materials,
+                       const int mat_id)
 {
     if (mat_id >= 0 && mat_id < (int)materials.size())
     {
         const tinyobj::material_t &m = materials[mat_id];
 
-        auto ambient_color = Radiance(m.ambient[0],m.ambient[1],m.ambient[2]);
-        auto diffuse_color = Radiance(m.diffuse[0],m.diffuse[1],m.diffuse[2]);
-        auto specular_color = Radiance(m.specular[0],m.specular[1],m.specular[2]);
-        auto transmittance = Radiance(m.transmittance[0],m.transmittance[1],m.transmittance[2]);
-        auto emittance = Radiance(m.emission[0], m.emission[1], m.emission[2]);
+        auto ambient_color = Spectrum(m.ambient[0],m.ambient[1],m.ambient[2]);
+        auto diffuse_color = Spectrum(m.diffuse[0],m.diffuse[1],m.diffuse[2]);
+        auto specular_color = Spectrum(m.specular[0],m.specular[1],m.specular[2]);
+        auto transmittance = Spectrum(m.transmittance[0],m.transmittance[1],m.transmittance[2]);
+        auto emittance = Spectrum(m.emission[0], m.emission[1], m.emission[2]);
         IllumType illum;
 
-        switch (m.illum) {
+        switch (m.illum)
+        {
         case 0:
             illum = IllumType::OPAQUE;
             break;
@@ -37,12 +27,15 @@ Material parse_material(const vector<tinyobj::material_t> &materials,
             illum = IllumType::SPECULAR;
             break;
         case 2:
-            illum = IllumType::TRANSPARENT;
+            illum = IllumType::SPECULAR_DIFFUSE;
             break;
         case 3:
-            illum = IllumType::MIRROR;
+            illum = IllumType::TRANSPARENT;
             break;
         case 4:
+            illum = IllumType::MIRROR;
+            break;
+        case 5:
             illum = IllumType::AREA_LIGHT;
             break;
         default:
@@ -58,28 +51,28 @@ Material parse_material(const vector<tinyobj::material_t> &materials,
                      .transparency=m.dissolve,
                      .index_of_ref=m.ior,
                      .illum=illum,
-                     .is_transparent=m.illum == 2,
-                     .is_lightsource=m.illum == 4};
+                     .is_transparent=m.illum == 3,
+                     .is_lightsource=m.illum == 5};
         return mat;
     }
     // Fallback to default material
-    Material mat{.ambient=Radiance(0,0,0),
-                 .diffuse=Radiance(0,0,0),
-                 .specular=Radiance(0,0,0),
+    Material mat{.ambient=Spectrum(0,0,0),
+                 .diffuse=Spectrum(0,0,0),
+                 .specular=Spectrum(0,0,0),
                  .spec_exp=0.0f,
-                 .transmittance=Radiance(0,0,0),
-                 .emittance=Radiance(0,0,0),
+                 .transmittance=Spectrum(0,0,0),
+                 .emittance=Spectrum(0,0,0),
                  .transparency=0.0f,
                  .index_of_ref=0.0f,
-                 .illum= IllumType::OPAQUE,
+                 .illum=IllumType::OPAQUE,
                  .is_transparent=false,
                  .is_lightsource=false};
     return mat;
 }
 
-vector<shared_ptr<Face>> parse_faces(const tinyobj::shape_t &shape,
-                                           const vector<tinyobj::material_t> &materials,
-                                           const tinyobj::attrib_t& attrib)
+vector<shared_ptr<Face>> parseFaces(const tinyobj::shape_t &shape,
+                                    const vector<tinyobj::material_t> &materials,
+                                    const tinyobj::attrib_t& attrib)
 {
     vector<shared_ptr<Face>> faces;
     size_t index_offset = 0;
@@ -132,16 +125,16 @@ vector<shared_ptr<Face>> parse_faces(const tinyobj::shape_t &shape,
                                               t_normals[0],
                                               t_normals[1],
                                               t_normals[2],
-                                              Radiance(red,green,blue)));
+                                              Spectrum(red,green,blue)));
         index_offset += fv;
     }
     return faces;
 }
 
-int parse_obj(const char *filename,
-              vector<shared_ptr<Mesh>> &mesh,
-              int leaf_threshold,
-              BVHType tree_type)
+int parseWavefrontFile(const char *filename,
+                      vector<shared_ptr<Mesh>> &mesh,
+                      int leaf_threshold,
+                      BVHType tree_type)
 {
     tinyobj::ObjReaderConfig cfg;
 
@@ -160,19 +153,19 @@ int parse_obj(const char *filename,
     const auto& shapes    = reader.GetShapes();
     const auto& attrib    = reader.GetAttrib();
 
-  string warn, err;
+    string warn, err;
 
-  for(size_t s = 0; s < shapes.size(); s++)
-  {
-    vector<shared_ptr<Face>> faces;
+    cout << shapes.size();
+    for(size_t s = 0; s < shapes.size(); s++)
+    {
+        vector<shared_ptr<Face>> faces;
 
-    faces = parse_faces(shapes[s], materials, attrib);
-    int material_id = shapes[s].mesh.material_ids[0]; // material index
-    auto material = parse_material(materials, material_id);
+        faces = parseFaces(shapes[s], materials, attrib);
+        int material_id = shapes[s].mesh.material_ids[0];
+        auto material = parseMaterial(materials, material_id);
 
-    mesh.push_back(make_shared<Mesh>(faces, false, false, leaf_threshold, tree_type, material));
-
-  }
+        mesh.push_back(make_shared<Mesh>(faces, leaf_threshold, tree_type, material));
+    }
   return 0;
 }
 
