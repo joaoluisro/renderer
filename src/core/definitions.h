@@ -4,6 +4,13 @@
 #define DEBUG false
 #define GO_THROUGH_TRANSPARENT false
 
+#define BSDF_SAMPLING_ONLY false
+#define LIGHT_SAMPLING_ONLY false
+
+#define UNIFORM_SAMPLING_ONLY false
+#define COSINE_SAMPLING_ONLY false
+
+#define MIS_DISABLED false
 
 enum IllumType{
     OPAQUE = 0,
@@ -17,7 +24,7 @@ enum IllumType{
 #define EPSILON 1e-5
 #define WORLD_UP vec3(0.0f, 1.0f, 0.0f)
 
-#define MAX_BOUNCE 5
+#define MAX_BOUNCE 10
 #define MAX_VAL 1e+9
 #define BACKGROUND_COLOR Spectrum(0,0,0)
 #define NULL_RADIANCE Spectrum(0,0,0)

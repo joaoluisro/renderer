@@ -155,7 +155,6 @@ int parseWavefrontFile(const char *filename,
 
     string warn, err;
 
-    cout << shapes.size();
     for(size_t s = 0; s < shapes.size(); s++)
     {
         vector<shared_ptr<Face>> faces;

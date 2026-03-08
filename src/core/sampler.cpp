@@ -1,39 +1,46 @@
 #include "core/sampler.h"
 
+#include "core/definitions.h"
 
 namespace Sample
 {
-    vec3 fromBSDF(vec3 n, vec3 w0, Material m)
+    vec3 fromBSDF(const vec3 &n,const vec3 &w0, const Material &m)
     {
-        vec3 wi;
+
+    #if UNIFORM_SAMPLING_ONLY
+        return uniform(n);
+    #elif COSINE_SAMPLING_ONLY
         return cosineWeighted(n);
+    #endif
+        vec3 wi;
+
         switch (m.illum)
         {
-        case IllumType::OPAQUE:
-            wi = cosineWeighted(n);
-            break;
-        case IllumType::SPECULAR:
-        {
-            wi = phongSpecular(n, w0, m.spec_exp);
-        }
-            break;
-        case IllumType::SPECULAR_DIFFUSE:
-        {
-            static RandomNumberGenerator rng;
-            float k = rng.generate();
-            if(k < 0.5)
+            case IllumType::OPAQUE:
+                wi = cosineWeighted(n);
+                break;
+            case IllumType::SPECULAR:
             {
                 wi = phongSpecular(n, w0, m.spec_exp);
             }
-            else
+                break;
+            case IllumType::SPECULAR_DIFFUSE:
             {
-                wi = cosineWeighted(n);
+                static RandomNumberGenerator rng;
+                float k = rng.generate();
+                if(k < 0.5)
+                {
+                    wi = phongSpecular(n, w0, m.spec_exp);
+                }
+                else
+                {
+                    wi = cosineWeighted(n);
+                }
             }
-        }
-            break;
-        default:
-            wi = uniform(n);
-            break;
+                break;
+            default:
+                wi = uniform(n);
+                break;
         }
         return wi;
     }
@@ -54,7 +61,7 @@ namespace Sample
         b = v.cross(t);
     }
 
-    vec3 phongSpecular(vec3 n, vec3 w0, float s)
+    vec3 phongSpecular(const vec3 &n, const vec3 &w0, const float s)
     {
         vec3 r = w0.reflect(n).normalized();
         static RandomNumberGenerator rng;
@@ -63,7 +70,7 @@ namespace Sample
         float eta2 = rng.generate();
 
         float phi = 2.0f * float(M_PI) * eta1;
-        float cosTheta = std::pow(eta2, 1.0f / (s + 1.0f)); // importance sampling
+        float cosTheta = std::pow(eta2, 1.0f / (s + 1.0f));
         float sinTheta = std::sqrt(std::max(0.0f, 1.0f - cosTheta * cosTheta));
 
         float x = sinTheta * std::cos(phi);
@@ -77,7 +84,7 @@ namespace Sample
         return wi.normalized();
     }
 
-    vec3 uniform(vec3 n)
+    vec3 uniform(const vec3 &n)
     {
         static RandomNumberGenerator rng;
 
@@ -99,7 +106,7 @@ namespace Sample
         return wi.normalized();
     }
 
-    vec3 cosineWeighted(vec3 n)
+    vec3 cosineWeighted(const vec3 &n)
     {
         static RandomNumberGenerator rng;
 
@@ -120,18 +127,6 @@ namespace Sample
         auto wi = (x * t) + (y * b) + (z * n);
         return wi.normalized();
     }
-
-
-    // radiance L += Sampler::select( L_direct, L_indirect,{0.1,0.9}, kwargs*)
-
-
-    // int select(vector<float> p, int* m, kwargs...)
-    // {
-    //     static RandomNumberGenerator rng;
-    //     if(rng.generate() < p1) return m1(kwaargs)
-    //     ...
-    // }
-
 }
 
 Sampler::Sampler() {}

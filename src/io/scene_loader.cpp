@@ -46,7 +46,6 @@ std::shared_ptr<Scene> parseSceneFile(const char *filename, const int width, con
         std::getline(file, tmp);
         look_at_as_str = tmp.substr(tmp.find(DEFAULT_DELIMITER), tmp.length());
         look_at = parsePoint(look_at_as_str);
-        origin.info();
         return new Camera(origin, look_at, fov, height, width);
     };
 
@@ -97,11 +96,10 @@ std::shared_ptr<Scene> parseSceneFile(const char *filename, const int width, con
         }
     }
     parseWavefrontFile(wavefront_filepath.c_str(), meshes, 4, BVHType::SAH);
-    for(auto m : meshes)
+    for(const auto &m : meshes)
     {
         if(m->material.is_lightsource)
         {
-            cout << " light source " << " \n";
             m->material.emittance = Spectrum(1,1,1);
             for(auto face : m->faces)
             {

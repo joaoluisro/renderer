@@ -11,16 +11,16 @@ class Sampler
 public:
     Sampler();
     float nextScalar();
-private:
+public:
     RandomNumberGenerator rng;
 };
 
 namespace Sample
 {
-    vec3 fromBSDF(vec3 n, vec3 w0, Material m);
-    vec3 uniform(vec3 n);
-    vec3 phongSpecular(vec3 n,vec3 w0, float shininess);
-    vec3 cosineWeighted(vec3 n);
+    vec3 fromBSDF(const vec3 &n,const vec3 &w0, const Material &m);
+    vec3 uniform(const vec3 &n);
+    vec3 phongSpecular(const vec3 &n, const vec3 &w0, const float shininess);
+    vec3 cosineWeighted(const vec3 &n);
 }
 
 #endif // SAMPLER_H

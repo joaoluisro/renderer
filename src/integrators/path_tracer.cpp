@@ -2,6 +2,8 @@
 
 #include <sstream>
 #include <iomanip>
+#include "core/definitions.h"
+#include "materials/dielectric.h"
 
 PathTracer::~PathTracer()
 {
@@ -15,6 +17,58 @@ float getLightFactor(shared_ptr<Face> geometry,
     float dist = (p_light - p_surface).length();
     float cos_y = n_light.dot((p_surface - p_light).normalized());
     return (dist*dist/cos_y);
+}
+
+
+Spectrum PathTracer::L_transparent(const vec3 &I,
+                                   const Intersection &hit,
+                                   const vec3 &n_hit,
+                                   bool inside,
+                                   int depth)
+{
+
+    if(GO_THROUGH_TRANSPARENT)
+    {
+        Ray passthrough(hit.point + I * EPSILON, I);
+        return traceRay(passthrough, true, false, depth + 1);
+    }
+
+    bool outside = (I.dot(n_hit) < 0.0f);
+
+    vec3 nl = outside ? n_hit * -1.0f : n_hit;
+    vec3 bias = nl * EPSILON;
+    vec3 origin = outside ? hit.point + bias : hit.point - bias;
+
+    float ior = hit.material.index_of_ref;
+
+    // Compute reflection dir
+    auto wo = I * -1.0f;
+    vec3 reflectDir = wo.reflect(nl).normalized();
+    vec3 refractDir = refractDirection(wo, nl, ior);
+
+    // if(refractDir.length() < EPSILON) return traceRay(Ray(origin, reflectDir), true, false, depth + 1);
+
+
+    // Fresnel using oriented normal nl
+    float kr = fresnel(wo, nl, ior); // kr = reflectance
+
+    if(sampler.rng.generate() < kr)
+    {
+        Ray reflectRay(origin, reflectDir);
+        return traceRay(reflectRay, true, false, depth + 1);
+    }
+    else
+    {
+        float attenuation = 1.0f;
+        if(inside)
+        {
+            attenuation = exp(-hit.t * 0.7);
+            attenuation = attenuation > 1.0f ? 1.0 : attenuation;
+        }
+        Ray refractRay(origin, refractDir.normalized());
+        return traceRay(refractRay, true, !inside, depth + 1) * attenuation + (hit.material.diffuse * (1 - attenuation));
+    }
+
 }
 
 Spectrum PathTracer::LDirect(const vec3 &wo,
@@ -53,6 +107,8 @@ Spectrum PathTracer::LDirect(const vec3 &wo,
     float pdf_light_solid = 1.0/light_area;
     pdf_light_solid *= G;
 
+    if(pdf_light_solid < EPSILON) return L;
+
     float pdf_bsdf = 0.0f;
     bool is_delta  = false;
 
@@ -65,12 +121,13 @@ Spectrum PathTracer::LDirect(const vec3 &wo,
         pdf_bsdf,
         is_delta
         );
+#if LIGHT_SAMPLING_ONLY || MIS_DISABLED
+    const float w_light = (1.0f/pdf_light_solid);
+#else
+    const float w_light = (pdf_light_solid) / (pdf_bsdf + (pdf_light_solid)) * (1.0f/pdf_light_solid);
+#endif
 
-    if(pdf_bsdf <= 0.0f) return L;
-
-    const float mis_weight = (pdf_light_solid) / (pdf_bsdf + (pdf_light_solid));
-
-    return fr * mis_weight * (1.0f/pdf_light_solid) * cos_on_surface * light->color * LIGHT_INTENSITY;
+    return fr * w_light * cos_on_surface * light->color * LIGHT_INTENSITY;
 }
 
 
@@ -110,7 +167,7 @@ Spectrum PathTracer::LIndirect(const vec3 &wo,
     // If we don't hit a light, no MIS with light sampling: only BSDF sampling
     if (!bounce_hit.material.is_lightsource)
     {
-        Spectrum Li = traceRay(shadow_ray, is_delta, depth + 1);
+        Spectrum Li = traceRay(shadow_ray, is_delta, false, depth + 1);
         return Li * (fr * cos_wi / pdf_bsdf);
     }
 
@@ -127,12 +184,17 @@ Spectrum PathTracer::LIndirect(const vec3 &wo,
 
     if (cos_light <= 0.0f) return NULL_RADIANCE;
 
+#if BSDF_SAMPLING_ONLY
+    return (Li * fr * cos_wi * cos_light)/distance2;
+#endif
+
     const float pdf_light_ω = pdf_light_A * distance2 / cos_light;
-    const float pdf_bsdf_ω  = pdf_bsdf;
+    float w_bsdf = pdf_bsdf / (pdf_bsdf + pdf_light_ω);
+#if MIS_DISABLED
+    w_bsdf = 1.0f;
+#endif
 
-    const float w_bsdf = pdf_bsdf_ω / (pdf_bsdf_ω + pdf_light_ω);
-
-    return Li * fr * cos_wi * w_bsdf / pdf_bsdf_ω;
+    return Li * fr * cos_wi * w_bsdf / pdf_bsdf;
 }
 
 Spectrum PathTracer::LMirror(const vec3 &w0,
@@ -143,10 +205,10 @@ Spectrum PathTracer::LMirror(const vec3 &w0,
 
     vec3 reflection_dir = w0.reflect(n_hit).normalized();
     Ray r_reflect(hit.point + EPSILON * n_hit, reflection_dir);
-    return traceRay(r_reflect, true, depth + 1) * MIRROR_FALLOFF;
+    return traceRay(r_reflect, true, false, depth + 1) * MIRROR_FALLOFF;
 }
 
-Spectrum PathTracer::traceRay(const Ray &r, bool is_delta, int depth)
+Spectrum PathTracer::traceRay(const Ray &r, bool is_delta, bool is_inside, int depth)
 {
     Intersection hit = scene->intersectionTest(r);
 
@@ -154,34 +216,44 @@ Spectrum PathTracer::traceRay(const Ray &r, bool is_delta, int depth)
 
     Spectrum Le, Li;
 
-    if(hit.material.is_lightsource && (is_delta || depth == 0))
+    if(hit.material.is_lightsource && (!is_delta || depth == 0))
     {
         Le = hit.material.emittance * LIGHT_INTENSITY;
         return Le;
     }
 
-    if(depth > MAX_BOUNCE) return Spectrum(1,1,1);
 
     vec3 n_hit = hit.face->getNormal(hit.point).normalized();
 
-    if(hit.material.illum == IllumType::MIRROR) return LMirror(r.direction * -1.0f, hit, n_hit, depth);
+    // static RandomNumberGenerator rng;
+    // if(rng.generate() > RR_TERMINATION_PROB && depth > RR_START_DEPTH)
+    // {
+    //     return Spectrum(1.0f,1.0f,1.0f);
+    // }
+    if(depth > MAX_BOUNCE) return Spectrum(1.0f,1.0f,1.0f);
 
+    if(hit.material.illum == IllumType::MIRROR) return LMirror(r.direction * -1.0f, hit, n_hit, depth);
+    if(hit.material.illum == IllumType::TRANSPARENT) return L_transparent(r.direction  * -1.0f, hit, n_hit, is_inside, depth);
+#if BSDF_SAMPLING_ONLY
+    return Le + LIndirect(r.direction.normalized() * -1.0f, hit, n_hit, depth);
+#elif LIGHT_SAMPLING_ONLY
+    return Le +
+           LDirect(r.direction.normalized() * -1.0f, hit, n_hit);
+#else
     return Le +
            LDirect(r.direction.normalized() * -1.0f, hit, n_hit) +
            LIndirect(r.direction.normalized() * -1.0f, hit, n_hit, depth);
-
+#endif
 }
 
-void PathTracer::render(const int spp, FrameBuffer &fb)
+void PathTracer::renderSingle(const int spp, FrameBuffer &fb)
 {
-    // cout << scene->camera.origin << "\n";
     RandomNumberGenerator rng;
 
     int height = scene->camera.height;
     int width = scene->camera.width;
     auto camera = scene->camera;
     std::vector<Spectrum> L(height * width);
-    FrameBuffer frame_tmp(width, height);
 
     for(auto k = 0; k < spp; k++)
     {
@@ -190,9 +262,56 @@ void PathTracer::render(const int spp, FrameBuffer &fb)
         {
             for(auto j = 0; j < width; j++)
             {
+                Ray r(scene->camera.origin, scene->camera.toWorldSpace(i,j, rng.generate(), rng.generate()));
+                L[i*width + j] += traceRay(r, false, false, 0)/spp;
+            }
+        }
+    }
+
+    #pragma omp parallel for collapse(2)
+    for(auto i = 0; i < height; i++)
+    {
+        for(auto j = 0; j < width; j++){
+            fb.set(i,j,L[i*width + j]);
+        }
+    }
+}
+
+
+void PathTracer::renderMultiple(const int spp, FrameBuffer &fb, const char* dir_path)
+{
+    RandomNumberGenerator rng;
+
+    int height = scene->camera.height;
+    int width = scene->camera.width;
+    auto camera = scene->camera;
+
+    FrameBuffer frame_tmp(width, height);
+
+    std::vector<Spectrum> L_k(height * width);
+    std::vector<Spectrum> L_final(height * width);
+
+    for(auto k = 1; k <= spp; k++)
+    {
+
+        #pragma omp parallel for collapse(2)
+        for(auto i = 0; i < height; i++)
+        {
+            for(auto j = 0; j < width; j++)
+            {
                 Ray traced_ray(camera.origin, camera.toWorldSpace(i,j, rng.generate(), rng.generate()));
-                L[i*width + j] += traceRay(traced_ray,false, 0) * (1.0f/spp);
-                frame_tmp.set(i,j,L[i*width + j]);
+                auto L = traceRay(traced_ray,false, false, 0);
+                L_k[i*width + j] = (L + (L_k[i*width + j] * (k - 1))) * (1.0f/k);
+            }
+        }
+
+        #pragma omp parallel for collapse(2)
+        for(auto i = 0; i < height; i++)
+        {
+            for(auto j = 0; j < width; j++)
+            {
+                auto l = L_k[i*width + j];
+                frame_tmp.set(i,j,l);
             }
         }
 
@@ -200,26 +319,9 @@ void PathTracer::render(const int spp, FrameBuffer &fb)
         std::ostringstream ss;
         ss << "f" << std::setw(4) << std::setfill('0') << k << ".ppm";
         std::string filename = ss.str();
-        string name = "analysis-lucy/cosine/" + filename;
+        string name = dir_path + filename;
         frame_tmp.writeToPPM(name.c_str(), width, height);
     }
 
-    // #pragma omp parallel for collapse(3)
-    // for(auto k = 0; k < spp; k++)
-    // {
-    //     for(auto i = 0; i < height; i++)
-    //     {
-    //         for(auto j = 0; j < width; j++)
-    //         {
-    //             Ray r(scene->camera.origin, scene->camera.toWorldSpace(i,j, rng.generate(), rng.generate()));
-    //             L[i*width + j] += traceRay(r, false, 0)/spp;
-    //         }
-    //     }
-    // }
-    // for(auto i = 0; i < height; i++)
-    // {
-    //     for(auto j = 0; j < width; j++){
-    //         fb.set(i,j,L[i*width + j]);
-    //     }
-    // }
+
 }

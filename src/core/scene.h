@@ -5,6 +5,7 @@
 #include "core/camera.h"
 #include "geometry/mesh.h"
 #include "core/light.h"
+#include "math/rng.h"
 
 struct Intersection{
     bool missed;
@@ -52,7 +53,10 @@ struct Scene{
 
     shared_ptr<Light> sampleLight() const
     {
-        return lights.front();
+        static pcg32 rng(pcg_extras::seed_seq_from<std::random_device>{});
+        static std::uniform_int_distribution<int> dist(0, lights.size() - 1);
+
+        return lights.at(dist(rng));
     }
 };
 

@@ -11,6 +11,8 @@
 #include <omp.h>
 #include <iostream>
 
+#include <iostream>
+#include <cstring>
 
 int main(int argc, char *argv[])
 {
@@ -38,12 +40,25 @@ int main(int argc, char *argv[])
         std::cerr << "Error parsing .scene file." << std::endl;
         return 1;
     }
+    bool singleFrame = std::strcmp(argv[5], "single") == 0;
+
     Sampler sampler;
     PathTracer p(scene, sampler);
     FrameBuffer fb(width, height);
-    p.render(n_samples, fb);
-    fb.clamp();
-    fb.writeToPPM("output.ppm", width, height);
+
+    if(singleFrame)
+    {
+        p.renderSingle(n_samples,fb);
+        fb.clamp();
+        fb.writeToPPM(argv[6], width, height);
+        return 0;
+    }
+    else
+    {
+        const char* dirpath = argv[6];
+        p.renderMultiple(n_samples, fb, dirpath);
+    }
+
     return 0;
 }
 
